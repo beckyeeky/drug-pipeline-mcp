@@ -1,5 +1,10 @@
 # 💊 drug-pipeline-mcp
 
+[![Smithery](https://smithery.ai/badge/@crop-mcp/drug-pipeline)](https://smithery.ai/servers/crop-mcp/drug-pipeline)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/DasClown/drug-pipeline-mcp?style=flat)](https://github.com/DasClown/drug-pipeline-mcp/stargazers)
+
 **Pharmaceutical R&D Pipeline Intelligence for AI Agents** — Clinical trials, FDA approvals, drug information & publications in one MCP server.
 
 No hallucination. Every output traces to a source NCT ID, FDA application number, or PMID.
@@ -8,6 +13,7 @@ No hallucination. Every output traces to a source NCT ID, FDA application number
 
 ```bash
 pip install git+https://github.com/DasClown/drug-pipeline-mcp.git
+# or try it on Smithery: https://smithery.ai/servers/crop-mcp/drug-pipeline
 
 # Start MCP server (stdio)
 drug-pipeline
