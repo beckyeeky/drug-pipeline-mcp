@@ -201,19 +201,14 @@ def search_trials(
     if limit < 1 or limit > 100:
         return {"status": "error", "error_code": "INVALID_INPUT", "message": "limit must be 1-100"}
 
-    # Build query
-    query_parts = []
-    if condition:
-        query_parts.append(f"AREA[ConditionSearch]/{_escape(condition)}")
-    if intervention:
-        query_parts.append(f"AREA[InterventionSearch]/{_escape(intervention)}")
-    query = " AND ".join(query_parts) if query_parts else ""
-
+    # Build query WITHOUT double-encoding
+    # query.cond is the native API parameter for condition search (no AREA syntax needed)
+    # For intervention, use AREA syntax via query.term
     params = {"pageSize": min(limit, 100), "format": "json"}
-    if query:
-        params["query.term"] = query
-    if condition and not query:
+    if condition:
         params["query.cond"] = condition
+    if intervention:
+        params["query.term"] = f'AREA[InterventionSearch]/{_escape(intervention)}'
     if sponsor:
         params["query.spons"] = sponsor
 
@@ -434,7 +429,7 @@ def get_fda_approvals(drug_name: str) -> dict:
 
     Returns application number, sponsor, submission history with dates and status.
     """
-    url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{_escape(drug_name)}+OR+products.generic_name:{_escape(drug_name)}&limit=3"
+    url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{_escape(drug_name)}+OR+products.active_ingredients.name:{_escape(drug_name)}&limit=3"
     data = _fetch(url)
 
     if _is_error(data):
