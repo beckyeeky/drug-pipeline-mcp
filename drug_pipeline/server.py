@@ -539,6 +539,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
     try:
         from mcp.server.sse import SseServerTransport
         from starlette.applications import Starlette
+        from starlette.responses import JSONResponse
         from starlette.routing import Mount, Route
     except ImportError:
         print("HTTP mode requires: pip install mcp[httpx] uvicorn")
@@ -553,8 +554,122 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
             read_stream, write_stream = streams
             await server.run(read_stream, write_stream, server.create_initialization_options())
 
+    async def handle_root(request):
+        return JSONResponse({
+            "server": "drug-pipeline",
+            "version": __version__,
+            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, and drug pipelines for AI agents. 12 tools, 6 data sources.",
+            "tools": list(TOOLS.keys()),
+            "docs": "https://github.com/DasClown/drug-pipeline-mcp",
+            "endpoints": {
+                "sse": "/sse",
+                "server_card": "/.well-known/mcp/server-card.json",
+                "config_schema": "/.well-known/mcp/config-schema.json",
+            }
+        })
+
+    async def handle_server_card(request):
+        tools_list = []
+        for name, meta in TOOLS.items():
+            tools_list.append({
+                "name": name,
+                "description": meta["description"],
+                "inputSchema": meta["input_schema"],
+            })
+        return JSONResponse({
+            "serverInfo": {"name": "drug-pipeline", "version": __version__},
+            "description": "Pharmaceutical R&D Intelligence MCP Server. Kombiniert ClinicalTrials.gov, openFDA, EMA, RxNorm, PubMed, und FAERS zu einer umfassenden Pharma-Intelligenz für KI-Agenten.",
+            "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
+            "license": "MIT",
+            "author": {
+                "name": "DrugPipelineMCP",
+                "url": "https://github.com/DasClown",
+            },
+            "iconUrl": "https://raw.githubusercontent.com/DasClown/CropProphEU/main/static/icon.svg",
+            "capabilities": {
+                "tools": {"total": len(tools_list), "list": [t["name"] for t in tools_list]},
+                "resources": {"total": 1, "list": ["ema://medicines"]},
+                "prompts": {"total": 3, "list": ["drug-pipeline", "trial-search", "safety-review"]},
+            },
+            "dataSources": [
+                {"name": "ClinicalTrials.gov", "type": "trials", "url": "https://clinicaltrials.gov/"},
+                {"name": "openFDA", "type": "approvals", "url": "https://open.fda.gov/"},
+                {"name": "EMA", "type": "approvals", "url": "https://www.ema.europa.eu/"},
+                {"name": "RxNorm", "type": "rx", "url": "https://rxnav.nlm.nih.gov/"},
+                {"name": "PubMed", "type": "research", "url": "https://pubmed.ncbi.nlm.nih.gov/"},
+                {"name": "FAERS", "type": "safety", "url": "https://www.fda.gov/drugs/drug-approvals-and-databases/fda-adverse-event-reporting-system-faers"},
+            ],
+            "tools": tools_list,
+            "resources": [
+                {
+                    "name": "EMA Medicines",
+                    "uri": "ema://medicines",
+                    "description": "EU Medicines database: aktuelle EMA-Zulassungen, Indikationen, Wirkstoffe",
+                    "mimeType": "application/json",
+                },
+            ],
+            "prompts": [
+                {
+                    "name": "drug-pipeline",
+                    "description": "Full pipeline for a drug: FDA approvals + EU status + safety + trials + publications",
+                    "arguments": [
+                        {"name": "drug_name", "description": "Drug name (brand or generic)", "required": True},
+                    ],
+                },
+                {
+                    "name": "trial-search",
+                    "description": "Find clinical trials for a condition with phase/status filters",
+                    "arguments": [
+                        {"name": "condition", "description": "Medical condition to search", "required": True},
+                        {"name": "phase", "description": "Optional phase filter (PHASE1, PHASE2, PHASE3)", "required": False},
+                    ],
+                },
+                {
+                    "name": "safety-review",
+                    "description": "Safety profile for a drug: adverse events, reactions, outcomes",
+                    "arguments": [
+                        {"name": "drug_name", "description": "Drug name to analyze", "required": True},
+                    ],
+                },
+            ],
+        })
+
+    async def handle_config_schema(request):
+        return JSONResponse({
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "type": "object",
+            "properties": {
+                "default_drug": {
+                    "type": "string",
+                    "title": "Standard-Wirkstoff",
+                    "default": "",
+                    "description": "Standard-Wirkstoff für Schnellabfragen",
+                    "examples": ["KEYTRUDA", "Ozempic"],
+                },
+                "language": {
+                    "type": "string",
+                    "title": "Sprache",
+                    "default": "en",
+                    "enum": ["en", "de"],
+                    "description": "Ausgabesprache",
+                },
+                "max_trials": {
+                    "type": "integer",
+                    "title": "Max Studien",
+                    "default": 10,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Maximale Anzahl klinischer Studien pro Suche",
+                },
+            },
+            "required": [],
+        })
+
     app = Starlette(
         routes=[
+            Route("/", endpoint=handle_root),
+            Route("/.well-known/mcp/server-card.json", endpoint=handle_server_card),
+            Route("/.well-known/mcp/config-schema.json", endpoint=handle_config_schema),
             Route("/sse", endpoint=handle_sse),
             Mount("/messages/", app=sse.handle_post_message),
         ],
