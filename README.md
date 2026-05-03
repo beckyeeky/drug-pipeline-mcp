@@ -113,6 +113,10 @@ Every result includes:
 
 No calculated fields, no predictions, no "ungefähre" estimates.
 
+## Language
+
+All output is in **English** (JSON field names, descriptions, results). The server can be configured via the `language` parameter on Smithery for future localization support.
+
 ## License
 
 MIT
