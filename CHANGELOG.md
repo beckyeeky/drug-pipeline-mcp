@@ -3,6 +3,9 @@
 ## 2026-05-04
 
 ### Added
+- **Issue Templates** (`.github/ISSUE_TEMPLATE/`) — Bug Report, Feature Request, Config
+- **CONTRIBUTING.md** — vollständiger Leitfaden für Contributionen
+- **Version-Sync** — pyproject.toml auf v0.5.0 aktualisiert
 - **TTL-Caching-Layer** (`_cached_fetch`) — API-Responses werden 5 Minuten (Standard) zwischengespeichert, reduziert Latenz bei Wiederholungsanfragen drastisch
 - **EMA-Cache Auto-Refresh** bei Modul-Import — EMA-Medikamentenliste wird beim Start im Hintergrund aktualisiert
 - **get_drug_label** und **get_recalls** nutzen jetzt `_cached_fetch` (5 Min TTL)

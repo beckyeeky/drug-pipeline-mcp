@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Dokumentation
+    url: https://github.com/DasClown/drug-pipeline-mcp#readme
+    about: Lies zuerst die README
+  - name: 🐦 Telegram Bot
+    url: https://t.me/drugpipelinemcp_bot
+    about: Teste den Bot direkt auf Telegram
+  - name: 🧪 Smithery
+    url: https://smithery.ai/servers/crop-mcp/drug-pipeline
+    about: Installiere den Server via Smithery
