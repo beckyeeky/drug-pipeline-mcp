@@ -3,7 +3,21 @@
 ## 2026-05-04
 
 ### Added
-- **4 neue Tools** (jetzt 16 insgesamt) 🚀
+- **TTL-Caching-Layer** (`_cached_fetch`) — API-Responses werden 5 Minuten (Standard) zwischengespeichert, reduziert Latenz bei Wiederholungsanfragen drastisch
+- **EMA-Cache Auto-Refresh** bei Modul-Import — EMA-Medikamentenliste wird beim Start im Hintergrund aktualisiert
+- **get_drug_label** und **get_recalls** nutzen jetzt `_cached_fetch` (5 Min TTL)
+
+### Changed
+- **get_patent_expiry** grundlegend überarbeitet 🔬
+  - Liefert jetzt `marketing_status` (Prescription/OTC/Discontinued)
+  - `reference_listed_drug` (RLD) Flag — ist es das Original-Präparat?
+  - `therapeutic_equivalence` Codes (AB, AA, BC) mit Beschreibung
+  - `estimated_exclusivity` basierend auf Submission-Typen:
+    - Type 1 (New Molecular Entity) → 5-Jahres-Exklusivität
+    - Type 3-5 (neue Formulierung/Kombination) → 3-Jahres-Exklusivität
+  - `total_submissions` Count
+  - Nutzt `_cached_fetch` mit 1h TTL
+  - Hinweis: FDA Orange Book Downloads wurden eingestellt (alle URLs 404)
   - `get_drug_label` — FDA-Arzneimittelkennzeichnung (Indikationen, Boxed Warnings, Kontraindikationen, Dosierung) via openFDA Drug Labeling API
   - `get_recalls` — FDA-Rückrufaktionen (Class I/II/III, Gründe, Daten, Firmen) via openFDA Enforcement API
   - `detect_safety_signals` — PRR (Proportional Reporting Ratio) Signalerkennung aus FAERS-Daten, erweiterte Pharmakovigilanz

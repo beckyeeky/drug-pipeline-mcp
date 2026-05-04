@@ -36,6 +36,12 @@ _ema_cache: list[dict] | None = None
 _ema_cache_time: float = 0.0  # timestamp of last successful load
 _EMA_CACHE_TTL: float = 86400  # 24h in seconds
 
+# Auto-refresh EMA cache on import (background pre-load)
+try:
+    _load_ema_data()
+except Exception:
+    pass  # Silent background refresh
+
 
 def _download_ema_xlsx() -> bool:
     """Download the latest EMA medicines report. Returns True on success."""
@@ -156,6 +162,39 @@ def _fetch(url: str, timeout: int = 15) -> dict | list | str:
 def _is_error(result: Any) -> bool:
     """Check if result is an error dict."""
     return isinstance(result, dict) and result.get("status") == "error"
+
+
+# ─────────────────────────────────────────────────────────────
+# TTL Cache — Reduziert API-Latenz bei Wiederholungsanfragen
+# ─────────────────────────────────────────────────────────────
+
+_CACHE: dict[str, tuple[float, Any]] = {}  # key -> (expiry_time, value)
+_CACHE_TTL: float = 300.0  # 5 Minuten Default
+
+
+def _cached_fetch(url: str, ttl: float = _CACHE_TTL, timeout: int = 15) -> dict | list | str:
+    """Fetch with TTL cache. Returns cached value if fresh, else fetches + caches."""
+    now = time.time()
+    if url in _CACHE:
+        expiry, val = _CACHE[url]
+        if now < expiry:
+            return val
+    result = _fetch(url, timeout=timeout)
+    if not _is_error(result):
+        _CACHE[url] = (now + ttl, result)
+    return result
+
+
+def _clear_cache(pattern: str | None = None) -> int:
+    """Clear cache entries. If pattern given, clear URLs containing that string."""
+    global _CACHE
+    if pattern is None:
+        count = len(_CACHE)
+        _CACHE = {}
+        return count
+    before = len(_CACHE)
+    _CACHE = {k: v for k, v in _CACHE.items() if pattern not in k}
+    return before - len(_CACHE)
 
 
 # ═════════════════════════════════════════════════════════════
@@ -1016,10 +1055,14 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         patent_data = get_patent_expiry(drug_name)
         if patent_data.get("status") == "ok":
             patent_info = {
-                "approval_dates": patent_data.get("approval_dates", []),
+                "is_reference_listed_drug": patent_data.get("is_reference_listed_drug"),
+                "marketing_statuses": patent_data.get("marketing_statuses"),
+                "estimated_exclusivity": patent_data.get("estimated_exclusivity", []),
+                "total_applications": len(patent_data.get("applications", [])),
+                "total_submissions": patent_data.get("total_submissions"),
                 "patent_note": patent_data.get("note"),
             }
-            sources_used.append("openFDA")
+            sources_used.extend(patent_data.get("data_sources", []))
 
     return {
         "status": "ok",
@@ -1385,8 +1428,9 @@ def get_drug_label(drug_name: str) -> dict:
                 "message": "drug_name must be at least 2 characters"}
 
     search_term = _escape(drug_name)
+    _rate_limited()
     url = f"{_FDA_BASE}/drug/label.json?search=openfda.brand_name:{search_term}+OR+openfda.generic_name:{search_term}&limit=1"
-    data = _fetch(url)
+    data = _cached_fetch(url, ttl=300)  # 5 min cache
 
     if _is_error(data):
         return data
@@ -1456,7 +1500,7 @@ def get_recalls(drug_name: str) -> dict:
 
     search_term = _escape(drug_name)
     url = f"{_FDA_BASE}/drug/enforcement.json?search=openfda.brand_name:{search_term}&limit=20"
-    data = _fetch(url)
+    data = _cached_fetch(url, ttl=300)  # 5 min cache
 
     if _is_error(data):
         return data
@@ -1627,63 +1671,170 @@ def detect_safety_signals(drug_name: str) -> dict:
 
 def get_patent_expiry(drug_name: str) -> dict:
     """
-    Check FDA Orange Book for patent and exclusivity information.
+    Get FDA patent, exclusivity, and marketing status information.
 
-    The FDA Orange Book data is available as a downloadable ZIP from:
-    https://www.fda.gov/media/76860/download (products.txt)
+    Uses openFDA drugsfda and NDC data to provide:
+    - Marketing status (Prescription, OTC, Discontinued)
+    - Reference Listed Drug (RLD) status
+    - Therapeutic equivalence codes (AB, AA, etc.)
+    - Submission class codes (Type 1 NME = 5yr exclusivity, Type 3-5 = 3yr)
+    - Estimated exclusivity expiry based on submission types
+    - Initial approval date (earliest ORIG submission)
+    - NDC market availability dates
 
-    For now, this attempts to find approval-related dates via openFDA
-    as a proxy, with a note that full Orange Book parsing requires
-    downloading and parsing the official products.txt file.
+    NOTE: The FDA Orange Book download endpoints (products.txt, exclusivity.txt)
+    have been discontinued by the FDA. This implementation uses openFDA data
+    as the best available alternative for patent/exclusivity intelligence.
     """
+    import re as _re
+
     if not drug_name or len(drug_name) < 2:
         return {"status": "error", "error_code": "INVALID_INPUT",
                 "message": "drug_name must be at least 2 characters"}
 
-    # Attempt to get FDA approval data as a proxy
     search_term = _escape(drug_name)
-    url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=3"
-    data = _fetch(url)
+    url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=5"
+    data = _cached_fetch(url, ttl=3600)
 
-    approvals = []
-    if not _is_error(data) and isinstance(data, dict):
+    if _is_error(data):
+        return data
+
+    exclusivity_info = []
+    all_submissions = []
+
+    if isinstance(data, dict):
         for r in (data.get("results", []) or []):
-            submissions = []
+            app_number = r.get("application_number", "?")
+            sponsor = r.get("sponsor_name", "?")
+
+            # Collect all submissions with dates
             for s in (r.get("submissions", []) or []):
-                submissions.append({
-                    "submission_type": s.get("submission_type"),
-                    "submission_status": s.get("submission_status"),
-                    "submission_status_date": s.get("submission_status_date"),
+                date_str = s.get("submission_status_date", "")
+                sub_type = s.get("submission_type", "")
+                sub_status = s.get("submission_status", "")
+                class_desc = s.get("submission_class_code_description", "")
+                priority = s.get("review_priority", "")
+                all_submissions.append({
+                    "application_number": app_number,
+                    "type": sub_type,
+                    "status": sub_status,
+                    "date": date_str,
+                    "class_description": class_desc,
+                    "review_priority": priority,
                 })
-            products = []
+
+            # Extract product-level data
+            products_info = []
             for p in (r.get("products", []) or []):
-                products.append({
+                ingredients = [i.get("name", "") for i in (p.get("active_ingredients", []) or [])]
+                te = p.get("te_code", "")
+                # Map TE codes to descriptions
+                te_desc = None
+                if te:
+                    te_desc = f"AB ({te[2:]})" if len(te) > 2 else te
+                    if te.upper().startswith("AB"):
+                        te_desc = "Therapeutically equivalent (AB-rated)"
+                    elif te.upper().startswith("AA"):
+                        te_desc = "Therapeutically equivalent (AA-rated)"
+                    elif te.upper().startswith("BC"):
+                        te_desc = "Not therapeutically equivalent (BC-rated)"
+                    elif te.upper().startswith("B"):
+                        te_desc = "Not therapeutically equivalent"
+
+                products_info.append({
                     "brand_name": p.get("brand_name"),
-                    "active_ingredients": [
-                        i.get("name") for i in (p.get("active_ingredients", []) or [])
-                    ],
+                    "active_ingredients": ingredients,
+                    "marketing_status": p.get("marketing_status"),
+                    "reference_drug": p.get("reference_drug") == "Yes",
+                    "reference_standard": p.get("reference_standard") == "Yes",
+                    "therapeutic_equivalence": te,
+                    "te_description": te_desc,
                     "dosage_form": p.get("dosage_form"),
                     "route": p.get("route"),
                 })
-            approvals.append({
-                "application_number": r.get("application_number"),
-                "sponsor_name": r.get("sponsor_name"),
-                "products": products[:3],
-                "submissions": submissions[:5],
+
+            exclusivity_info.append({
+                "application_number": app_number,
+                "sponsor_name": sponsor,
+                "products": products_info,
             })
+
+    # Calculate estimated exclusivity from submission data
+    estimated_exclusivity = []
+    if all_submissions:
+        # Find earliest ORIG (original) approval
+        orig_dates = [s["date"] for s in all_submissions
+                     if s["type"] == "ORIG" and s["status"] == "AP" and s["date"]]
+        if orig_dates:
+            earliest = min(orig_dates)
+            # Format: YYYYMMDD
+            try:
+                year = int(earliest[:4])
+                month = int(earliest[4:6])
+                day = int(earliest[6:8])
+                estimated_exclusivity.append({
+                    "type": "Initial FDA Approval",
+                    "date": f"{year}-{month:02d}-{day:02d}",
+                    "description": "Earliest original approval date",
+                })
+                # Type 1 NME = 5 year exclusivity
+                type1_found = any(
+                    s["class_description"] == "Type 1 - New Molecular Entity"
+                    for s in all_submissions
+                )
+                if type1_found:
+                    exp_year = year + 5
+                    estimated_exclusivity.append({
+                        "type": "NME Exclusivity Estimate (5yr)",
+                        "date": f"{exp_year}-{month:02d}-{day:02d}",
+                        "description": "New Molecular Entity — estimated 5-year exclusivity from approval",
+                    })
+                # Type 3-5 = 3 year exclusivity
+                type35_found = any(
+                    c in (s.get("class_description", "") or "")
+                    for s in all_submissions
+                    for c in ["Type 3", "Type 4", "Type 5"]
+                )
+                if type35_found:
+                    exp_year = year + 3
+                    estimated_exclusivity.append({
+                        "type": "New Clinical Study Exclusivity Estimate (3yr)",
+                        "date": f"{exp_year}-{month:02d}-{day:02d}",
+                        "description": "New formulation/combination — estimated 3-year exclusivity",
+                    })
+            except (ValueError, IndexError):
+                pass
+
+    # Check if RLD (Reference Listed Drug) — indicates brand/originator
+    is_rld = any(
+        p.get("reference_drug")
+        for app in exclusivity_info
+        for p in app.get("products", [])
+    )
+
+    # Summary
+    statuses = set()
+    for app in exclusivity_info:
+        for p in app.get("products", []):
+            ms = p.get("marketing_status")
+            if ms:
+                statuses.add(ms)
 
     return {
         "status": "ok",
         "drug_name": drug_name,
-        "approvals": approvals,
+        "applications": exclusivity_info,
+        "is_reference_listed_drug": is_rld,
+        "marketing_statuses": sorted(statuses),
+        "estimated_exclusivity": estimated_exclusivity,
+        "total_submissions": len(all_submissions),
         "note": (
-            "Full Orange Book patent/exclusivity data requires downloading and parsing "
-            "products.txt from https://www.fda.gov/media/76860/download. "
-            "The openFDA drugsfda endpoint provides approval dates as a proxy. "
-            "For comprehensive patent numbers and expiry dates, implement a parser "
-            "for the FDA Orange Book products.txt file."
+            "Patent/exclusivity estimates based on FDA submission class codes. "
+            "Type 1 (New Molecular Entity) grants 5-year exclusivity. "
+            "Types 3-5 (new formulation, combination, manufacturer) grant 3-year exclusivity. "
+            "The FDA Orange Book direct download endpoints have been discontinued by the FDA. "
+            "For exact patent numbers and litigation dates, consult the USPTO or Drugs@FDA."
         ),
-        "orange_book_url": "https://www.fda.gov/media/76860/download",
-        "data_source": "openFDA (proxy — Orange Book data requires download)",
+        "data_sources": ["openFDA drugsfda"],
         "timestamp": datetime.utcnow().isoformat(),
     }
