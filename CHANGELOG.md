@@ -1,5 +1,11 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-04
+
+### Changed
+- Monthly auto-update: EMA-Medikamentenliste aktualisiert (2.688 Einträge)
+- pyproject.toml: build-backend auf setuptools.build_meta aktualisiert
+
 ## 2026-05-03
 
 ### Added
