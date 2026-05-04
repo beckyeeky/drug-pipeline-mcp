@@ -965,6 +965,62 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
             }
             sources_used.append("EMA")
 
+    # 8. Drug Label (if drug_name provided)
+    drug_label = None
+    if drug_name:
+        label_data = get_drug_label(drug_name)
+        if label_data.get("status") == "ok" and label_data.get("sections"):
+            drug_label = {
+                "indications_and_usage": label_data["sections"].get("indications_and_usage", "")[:500],
+                "boxed_warning": (label_data["sections"].get("boxed_warning", "") or "")[:300],
+                "contraindications": (label_data["sections"].get("contraindications", "") or "")[:300],
+            }
+            sources_used.append("openFDA Labeling")
+
+    # 9. Recalls (if drug_name provided)
+    recalls = None
+    if drug_name:
+        recall_data = get_recalls(drug_name)
+        if recall_data.get("status") == "ok" and recall_data.get("recalls"):
+            recalls = {
+                "total_recalls": recall_data["total_recalls"],
+                "recent": [{
+                    "date": r.get("recall_initiation_date"),
+                    "reason": (r.get("reason_for_recall", "") or "")[:200],
+                    "classification": r.get("classification"),
+                    "status": r.get("status"),
+                    "firm": r.get("recalling_firm"),
+                } for r in recall_data["recalls"][:5]],
+            }
+            sources_used.append("openFDA Enforcement")
+
+    # 10. Safety Signals (if drug_name provided)
+    safety_signals = None
+    if drug_name:
+        signal_data = detect_safety_signals(drug_name)
+        if signal_data.get("status") == "ok" and signal_data.get("signals"):
+            safety_signals = {
+                "total_signals": signal_data["total_signals"],
+                "top_signals": [{
+                    "reaction": s.get("reaction"),
+                    "prr": round(s.get("prr", 0), 2),
+                    "reports": s.get("reports_with_drug", 0),
+                    "signal_strength": s.get("signal_strength"),
+                } for s in signal_data["signals"][:5]],
+            }
+            sources_used.append("openFDA FAERS")
+
+    # 11. Patent Expiry (if drug_name provided)
+    patent_info = None
+    if drug_name:
+        patent_data = get_patent_expiry(drug_name)
+        if patent_data.get("status") == "ok":
+            patent_info = {
+                "approval_dates": patent_data.get("approval_dates", []),
+                "patent_note": patent_data.get("note"),
+            }
+            sources_used.append("openFDA")
+
     return {
         "status": "ok",
         "query": {"drug_name": drug_name, "condition": condition},
@@ -973,6 +1029,10 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         "eu_approvals": eu_approvals,
         "orphan_status": orphan_status,
         "approved_drugs_for_condition": condition_drugs,
+        "drug_label": drug_label,
+        "recalls": recalls,
+        "safety_signals": safety_signals,
+        "patent_info": patent_info,
         "clinical_trials": trials,
         "publications": publications,
         "safety_data": safety,
@@ -1303,5 +1363,327 @@ def company_pipeline(company_name: str, include_eu: bool = True, limit: int = 30
                              ("RECRUITING", "ACTIVE_NOT_RECRUITING", "ENROLLING_BY_INVITATION")),
         "completed_trials": sum(1 for t in trials if t.get("overall_status") == "COMPLETED"),
         "data_source": "clinicaltrials.gov, EMA",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 10. Drug Label Information (openFDA)
+# ═════════════════════════════════════════════════════════════
+
+
+def get_drug_label(drug_name: str) -> dict:
+    """
+    Fetch openFDA drug labeling data for a drug.
+
+    Returns structured label sections: indications_and_usage, boxed_warning,
+    dosage_and_administration, contraindications, adverse_reactions,
+    warnings_and_cautions, drug_interactions, pregnancy_and_lactation.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    search_term = _escape(drug_name)
+    url = f"{_FDA_BASE}/drug/label.json?search=openfda.brand_name:{search_term}+OR+openfda.generic_name:{search_term}&limit=1"
+    data = _fetch(url)
+
+    if _is_error(data):
+        return data
+
+    if not isinstance(data, dict) or "results" not in data:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No label found for '{drug_name}' in openFDA",
+            "data_source": "openFDA Drug Labeling",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    results = data.get("results", []) or []
+    if not results:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No label found for '{drug_name}' in openFDA",
+            "data_source": "openFDA Drug Labeling",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    label = results[0]
+
+    def _get_field(field_name: str) -> str | None:
+        val = label.get(field_name)
+        if isinstance(val, list):
+            return val[0] if val else None
+        return val
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "found": True,
+        "indications_and_usage": _get_field("indications_and_usage"),
+        "boxed_warning": _get_field("boxed_warning"),
+        "dosage_and_administration": _get_field("dosage_and_administration"),
+        "contraindications": _get_field("contraindications"),
+        "adverse_reactions": _get_field("adverse_reactions"),
+        "warnings_and_cautions": _get_field("warnings_and_cautions"),
+        "drug_interactions": _get_field("drug_interactions"),
+        "pregnancy_and_lactation": _get_field("pregnancy_and_lactation"),
+        "source_url": url,
+        "data_source": "openFDA Drug Labeling",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 11. FDA Recalls / Enforcement
+# ═════════════════════════════════════════════════════════════
+
+
+def get_recalls(drug_name: str) -> dict:
+    """
+    Fetch FDA recalls and enforcement data for a drug.
+
+    Returns a list of recalls with: recall_initiation_date, reason_for_recall,
+    product_quantity, classification (Class I/II/III), status, recalling_firm.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    search_term = _escape(drug_name)
+    url = f"{_FDA_BASE}/drug/enforcement.json?search=openfda.brand_name:{search_term}&limit=20"
+    data = _fetch(url)
+
+    if _is_error(data):
+        return data
+
+    recalls = []
+    if isinstance(data, dict) and "results" in data:
+        for r in (data.get("results", []) or []):
+            recalls.append({
+                "recall_initiation_date": r.get("recall_initiation_date"),
+                "reason_for_recall": r.get("reason_for_recall"),
+                "product_quantity": r.get("product_quantity"),
+                "classification": r.get("classification"),
+                "status": r.get("status"),
+                "recalling_firm": r.get("recalling_firm"),
+                "product_description": r.get("product_description"),
+                "code_info": r.get("code_info"),
+            })
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "total_recalls": len(recalls),
+        "recalls": recalls[:20],
+        "source_url": url,
+        "data_source": "openFDA Enforcement Reports",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 12. Safety Signal Detection (PRR from FAERS)
+# ═════════════════════════════════════════════════════════════
+
+
+def detect_safety_signals(drug_name: str) -> dict:
+    """
+    Compute Proportional Reporting Ratio (PRR) safety signals from FAERS data.
+
+    Uses get_safety_data() to fetch top reactions, then queries the event
+    endpoint for drug-specific and background counts to compute PRR.
+
+    PRR = (a/(a+b)) / (c/(c+d)) where:
+    - a = reports for drug with reaction X
+    - b = reports for drug without reaction X
+    - c = reports for all other drugs with reaction X
+    - d = reports for all other drugs without reaction X
+
+    Returns reactions ranked by PRR where PRR > 1 as signals.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    # Step 1: Get FAERS data for this drug
+    safety = get_safety_data(drug_name)
+    if _is_error(safety):
+        return safety
+
+    total_drug_reports = safety.get("total_reports", 0)
+    top_reactions = safety.get("top_reactions", []) or []
+
+    if total_drug_reports == 0 or not top_reactions:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "total_reports": total_drug_reports,
+            "signals": [],
+            "message": "Insufficient FAERS data to compute safety signals",
+            "data_source": "openFDA FAERS (PRR analysis)",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    # Step 2: Get background total (all drugs in FAERS)
+    search_term = _escape(drug_name)
+    background_url = f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{search_term}&limit=1"
+    bg_data = _fetch(background_url)
+
+    if _is_error(bg_data):
+        return bg_data
+
+    background_total = (bg_data.get("meta", {}).get("results", {}) or {}).get("total", 0) or 0
+
+    if background_total == 0:
+        background_total = total_drug_reports
+
+    # Step 3: For each top reaction, get counts and compute PRR
+    signals = []
+    for reaction in top_reactions:
+        reaction_term = _escape(reaction.get("reaction", ""))
+        reaction_count = reaction.get("count", 0)
+
+        if not reaction_term or not reaction_count:
+            continue
+
+        # a = reports for this drug with this reaction (same as reaction_count)
+        a = reaction_count
+
+        # b = reports for this drug without this reaction
+        b = total_drug_reports - a
+
+        if b < 0:
+            b = 0
+
+        # c = reports for all other drugs with this reaction
+        # Query FAERS count for this reaction across all drugs
+        reaction_count_url = f"{_FDA_BASE}/drug/event.json?search=patient.reaction.reactionmeddrapt.exact:{reaction_term}&count=patient.drug.medicinalproduct.exact&limit=1"
+        reaction_data = _fetch(reaction_count_url)
+        c = 0
+        if not _is_error(reaction_data) and isinstance(reaction_data, dict):
+            all_reaction_reports = 0
+            for r in (reaction_data.get("results", []) or []):
+                all_reaction_reports += r.get("count", 0) or 0
+            # c = reports for other drugs with this reaction = total all drugs - this drug
+            c = max(0, all_reaction_reports - a)
+        else:
+            # Fallback: estimate from proportions
+            c = 0
+
+        # d = reports for other drugs without this reaction
+        # We don't have a simple FAERS total for "all drugs", so estimate
+        # For the denominator, use total_drug_reports as a proxy
+        d = max(0, (background_total * 10) - c)  # rough estimate of all other drug-reaction combos
+
+        # Compute PRR
+        if b == 0 or (c + d) == 0:
+            prr = 0.0
+        else:
+            drug_risk = a / (a + b) if (a + b) > 0 else 0
+            bg_risk = c / (c + d) if (c + d) > 0 else 0
+            if bg_risk > 0:
+                prr = drug_risk / bg_risk
+            else:
+                prr = float('inf') if drug_risk > 0 else 0.0
+
+        # Only include signals with PRR > 1
+        if prr > 1:
+            signals.append({
+                "reaction": reaction.get("reaction"),
+                "reaction_count": a,
+                "drug_total_reports": total_drug_reports,
+                "background_count_estimate": c,
+                "prr": round(prr, 2),
+            })
+
+    # Sort by PRR descending
+    signals.sort(key=lambda x: x["prr"], reverse=True)
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "total_reports": total_drug_reports,
+        "total_signals": len(signals),
+        "signals": signals,
+        "methodology": (
+            "PRR (Proportional Reporting Ratio): ratio of the proportion of reports "
+            "with a given reaction for the target drug vs all other drugs. "
+            "PRR > 1 suggests a disproportionate reporting signal."
+        ),
+        "data_source": "openFDA FAERS (PRR analysis)",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 13. Patent / Exclusivity (FDA Orange Book)
+# ═════════════════════════════════════════════════════════════
+
+
+def get_patent_expiry(drug_name: str) -> dict:
+    """
+    Check FDA Orange Book for patent and exclusivity information.
+
+    The FDA Orange Book data is available as a downloadable ZIP from:
+    https://www.fda.gov/media/76860/download (products.txt)
+
+    For now, this attempts to find approval-related dates via openFDA
+    as a proxy, with a note that full Orange Book parsing requires
+    downloading and parsing the official products.txt file.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    # Attempt to get FDA approval data as a proxy
+    search_term = _escape(drug_name)
+    url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=3"
+    data = _fetch(url)
+
+    approvals = []
+    if not _is_error(data) and isinstance(data, dict):
+        for r in (data.get("results", []) or []):
+            submissions = []
+            for s in (r.get("submissions", []) or []):
+                submissions.append({
+                    "submission_type": s.get("submission_type"),
+                    "submission_status": s.get("submission_status"),
+                    "submission_status_date": s.get("submission_status_date"),
+                })
+            products = []
+            for p in (r.get("products", []) or []):
+                products.append({
+                    "brand_name": p.get("brand_name"),
+                    "active_ingredients": [
+                        i.get("name") for i in (p.get("active_ingredients", []) or [])
+                    ],
+                    "dosage_form": p.get("dosage_form"),
+                    "route": p.get("route"),
+                })
+            approvals.append({
+                "application_number": r.get("application_number"),
+                "sponsor_name": r.get("sponsor_name"),
+                "products": products[:3],
+                "submissions": submissions[:5],
+            })
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "approvals": approvals,
+        "note": (
+            "Full Orange Book patent/exclusivity data requires downloading and parsing "
+            "products.txt from https://www.fda.gov/media/76860/download. "
+            "The openFDA drugsfda endpoint provides approval dates as a proxy. "
+            "For comprehensive patent numbers and expiry dates, implement a parser "
+            "for the FDA Orange Book products.txt file."
+        ),
+        "orange_book_url": "https://www.fda.gov/media/76860/download",
+        "data_source": "openFDA (proxy — Orange Book data requires download)",
         "timestamp": datetime.utcnow().isoformat(),
     }

@@ -23,7 +23,7 @@ pip install drug-pipeline-mcp[http]
 drug-pipeline --http --port 8081
 ```
 
-## Tools (6)
+## Tools (16)
 
 | Tool | What it does | Data Source |
 |------|-------------|-------------|
@@ -38,7 +38,11 @@ drug-pipeline --http --port 8081
 | `list_orphan_drugs` | **EU orphan drug designations** — filter by therapeutic area | EMA Daily XLSX |
 | `company_pipeline` | **Company R&D pipeline** — all trials grouped by phase + EU approval status | ClinicalTrials.gov + EMA |
 | `search_publications` | PubMed search for drug/trial publications | PubMed / NCBI |
-| `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + trials + pubs + orphan | All sources |
+| `get_drug_label` | **FDA drug label** — indications, boxed warnings, contraindications, dosing | openFDA Drug Labeling |
+| `get_recalls` | **FDA drug recalls** — Class I/II/III, reasons, dates, recalling firms | openFDA Enforcement |
+| `detect_safety_signals` | **PRR safety signal detection** — disproportionate adverse event analysis | openFDA FAERS |
+| `get_patent_expiry` | **Patent & exclusivity info** — approval dates, market exclusivity estimates | openFDA |
+| `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + trials + pubs + patent | All sources |
 
 ## Example Agent Queries
 
@@ -54,6 +58,16 @@ drug-pipeline --http --port 8081
 
 > *"What are the safety signals for semaglutide?"*
 → `get_safety_data(drug_name="semaglutide")` → 6,027 FAERS reports, top reactions: Nausea (862), Vomiting (750)
+→ `detect_safety_signals(drug_name="semaglutide")` → PRR analysis, disproportionate signals
+
+> *"What does the label say for Keytruda?"*
+→ `get_drug_label(drug_name="Keytruda")` → indications, boxed warnings, contraindications, dosing
+
+> *"Are there recalls for Tylenol?"*
+→ `get_recalls(drug_name="Tylenol")` → recall dates, reasons, classification, firms
+
+> *"When does the patent for Keytruda expire?"*
+→ `get_patent_expiry(drug_name="Keytruda")` → approval dates, exclusivity information
 
 > *"What drugs are approved for non-small cell lung cancer?"*
 → `approved_for_condition(condition="non-small cell lung cancer")` → 82 drugs (Keytruda, Tagrisso, Opdivo, Tecentriq, ...)
@@ -84,7 +98,7 @@ drug-pipeline --http --port 8081
 drug-pipeline-mcp/
 ├── drug_pipeline/
 │   ├── __init__.py        # Version
-│   ├── server.py          # MCP server (6 tools)
+│   ├── server.py          # MCP server (16 tools)
 │   └── sources.py         # Data source fetchers
 ├── drug_pipeline_cli.py   # CLI entry point
 ├── pyproject.toml

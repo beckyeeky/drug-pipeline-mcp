@@ -2,6 +2,27 @@
 
 ## 2026-05-04
 
+### Added
+- **4 neue Tools** (jetzt 16 insgesamt) 🚀
+  - `get_drug_label` — FDA-Arzneimittelkennzeichnung (Indikationen, Boxed Warnings, Kontraindikationen, Dosierung) via openFDA Drug Labeling API
+  - `get_recalls` — FDA-Rückrufaktionen (Class I/II/III, Gründe, Daten, Firmen) via openFDA Enforcement API
+  - `detect_safety_signals` — PRR (Proportional Reporting Ratio) Signalerkennung aus FAERS-Daten, erweiterte Pharmakovigilanz
+  - `get_patent_expiry` — FDA-Patent- und Exklusivitätsinformationen (Zulassungsdaten, Marktexklusivität)
+- **drug_pipeline Composite** um 4 neue Datenbereiche erweitert: drug_label, recalls, safety_signals, patent_info
+- **Optimierungs-Cron** (wöchentlich montags) — Markt- & Wettbewerbsrecherche
+- **Monats-Update-Cron** (1. des Monats) — automatischer Git-Pull, EMA-Update, Build & Push
+
+### Fixed
+- **pyproject.toml:** build-backend auf `setuptools.build_meta` aktualisiert (Kompatibilität mit setuptools 82+)
+- **get_recalls:** Feldname in drug_pipeline_summary korrigiert
+
+### Changed
+- Version auf v0.5.0 angehoben
+- README aktualisiert: 16 Tools, neue Beispielqueries
+- Server-Card & Root-Endpoint auf 16 Tools aktualisiert
+
+## 2026-05-04
+
 ### Changed
 - Monthly auto-update: EMA-Medikamentenliste aktualisiert (2.688 Einträge)
 - pyproject.toml: build-backend auf setuptools.build_meta aktualisiert

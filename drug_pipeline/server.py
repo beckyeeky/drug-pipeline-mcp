@@ -44,6 +44,10 @@ from .sources import (
     get_trial_results as _get_trial_results,
     list_orphan_drugs as _list_orphan_drugs,
     company_pipeline as _company_pipeline,
+    get_drug_label as _get_drug_label,
+    get_recalls as _get_recalls,
+    detect_safety_signals as _detect_safety_signals,
+    get_patent_expiry as _get_patent_expiry,
     drug_pipeline_summary,
     VALID_PHASES,
     VALID_STATUSES,
@@ -199,6 +203,14 @@ class CompanyPipelineInput(BaseModel):
     )
 
 
+class DrugNameInput(BaseModel):
+    """Drug name input for label, recalls, signals, and patent tools."""
+    drug_name: str = Field(
+        ..., min_length=2,
+        description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide', 'Keytruda')",
+    )
+
+
 # ─────────────────────────────────────────────────────────────
 # Tool Metadata & Dispatch
 # ─────────────────────────────────────────────────────────────
@@ -300,6 +312,30 @@ def _handle_company_pipeline(**kwargs: Any) -> list[types.TextContent]:
     return _response(result)
 
 
+def _handle_get_drug_label(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_drug_label(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_get_recalls(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_recalls(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_detect_safety_signals(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _detect_safety_signals(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_get_patent_expiry(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_patent_expiry(validated.drug_name.strip())
+    return _response(result)
+
+
 def _response(data: dict) -> list[types.TextContent]:
     """Wrap a result dict in MCP TextContent."""
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
@@ -357,10 +393,12 @@ TOOLS = {
         "description": (
             "**Composite intelligence tool** — Combines drug lookup, FDA approval "
             "status, EU/EMA approval status, adverse event safety data, active "
-            "clinical trials, and recent publications into a single response. "
+            "clinical trials, drug labeling, safety signals, recalls, patent info, "
+            "and recent publications into a single response. "
             "Given a drug name or medical condition, returns: drug info "
             "(ingredients, ATC code, labeler), FDA approval history, EU authorization "
-            "status, FAERS safety data, matching clinical trials, and recent PubMed "
+            "status, FAERS safety data, drug label, safety signals, recalls, patent "
+            "expiry, matching clinical trials, and recent PubMed "
             "publications. "
             "This is the primary tool for pipeline intelligence — use instead of "
             "calling separate tools individually."
@@ -448,6 +486,58 @@ TOOLS = {
         ),
         "input_schema": CompanyPipelineInput.model_json_schema(),
         "handler": _handle_company_pipeline,
+    },
+    "get_drug_label": {
+        "description": (
+            "Get the FDA-approved drug label (prescribing information) "
+            "for a drug by brand or generic name. Returns key sections: "
+            "indications and usage, boxed warnings, dosage and administration, "
+            "contraindications, adverse reactions, warnings and precautions, "
+            "drug interactions, and pregnancy/lactation information. "
+            "Use this for clinical decision support and safety review."
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_drug_label,
+    },
+    "get_recalls": {
+        "description": (
+            "Get FDA drug recall and enforcement information for a drug "
+            "by brand or generic name. Returns recall initiation dates, "
+            "reasons for recall, product quantities, recall classification "
+            "(Class I = dangerous, Class II = temporary, Class III = unlikely), "
+            "status (ongoing/terminated), and the recalling firm. "
+            "Use this for pharmacovigilance and supply chain monitoring."
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_recalls,
+    },
+    "detect_safety_signals": {
+        "description": (
+            "**Advanced pharmacovigilance** — Detect disproportionate "
+            "adverse event signals for a drug using PRR (Proportional "
+            "Reporting Ratio) analytics from FAERS data. "
+            "Returns a ranked list of adverse reactions with PRR > 1, "
+            "indicating potential safety signals that warrant further "
+            "investigation. "
+            "Use this for signal detection, not just raw reaction counting. "
+            "NOTE: PRR > 2 with chi-squared > 4 is a typical regulatory threshold."
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_detect_safety_signals,
+    },
+    "get_patent_expiry": {
+        "description": (
+            "Get FDA patent and exclusivity information for a drug. "
+            "Returns approval dates, Orange Book patent information, "
+            "and estimated market exclusivity periods. "
+            "Use this to answer: 'When does the patent expire?' "
+            "or 'When can generics enter the market?' "
+            "NOTE: Full Orange Book patent data requires downloading "
+            "the FDA products.txt — results are based on FDA approval "
+            "data when patent details are unavailable."
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_patent_expiry,
     },
 }
 
@@ -558,7 +648,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
         return JSONResponse({
             "server": "drug-pipeline",
             "version": __version__,
-            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, and drug pipelines for AI agents. 12 tools, 6 data sources.",
+            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, and company pipelines. 16 tools, 6 data sources.",
             "tools": list(TOOLS.keys()),
             "docs": "https://github.com/DasClown/drug-pipeline-mcp",
             "endpoints": {
