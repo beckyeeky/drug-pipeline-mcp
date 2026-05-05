@@ -1,6 +1,12 @@
 # Changelog — drug-pipeline-mcp
 
-## 2026-05-05
+## 2026-05-05 (v0.5.3)
+
+#### Fixed
+- **🐛 openpyxl fehlte in Dependencies** — EMA-Funktionen (`get_eu_approvals`, `approved_for_condition`, `list_orphan_drugs`) gaben stumm leere Results zurück, weil `openpyxl` nicht installiert war. Jetzt als Pflichtdependency in `pyproject.toml`.
+- **EMA-Fehlerbehandlung** — Wenn `openpyxl` doch fehlt, wird ein logging-Warning ausgegeben statt silent fail.
+
+## 2026-05-05 (v0.5.2)
 
 #### Added
 - **Tests** (`tests/`) — 31 Unit-Tests: Cache-Logik, Input-Validierung, Tool-Registrierung, Fehlerbehandlung

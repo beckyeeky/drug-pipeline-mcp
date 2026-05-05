@@ -84,6 +84,11 @@ def _load_ema_data() -> list[dict]:
     try:
         import openpyxl
     except ImportError:
+        import logging
+        logging.getLogger("drug_pipeline").warning(
+            "openpyxl not installed — EMA data will not be available. "
+            "Install with: pip install drug-pipeline-mcp or pip install openpyxl"
+        )
         _ema_cache = []
         return _ema_cache
 

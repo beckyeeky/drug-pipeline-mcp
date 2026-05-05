@@ -2,7 +2,7 @@
   "$schema": "https://smithery.ai/schemas/deployment.json",
   "name": "drug-pipeline-mcp",
   "description": "Pharmaceutical R&D Pipeline Intelligence — clinical trials, FDA/EMA approvals, safety data, drug labels, patents & publications",
-  "version": "0.5.0",
+  "version": "0.5.3",
   "author": "DasClown",
   "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
   "type": "docker",
