@@ -7,14 +7,14 @@ name = "drug-pipeline-mcp"
 version = "0.5.0"
 description = "Pharmaceutical R&D Pipeline Intelligence for AI Agents — clinical trials, FDA approvals, drug info & publications"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.10"
 authors = [
     {name = "DasClown"},
 ]
 keywords = ["mcp", "pharma", "clinical-trials", "fda", "drug-development", "model-context-protocol"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Healthcare Industry",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
@@ -27,11 +27,22 @@ dependencies = [
     "pydantic>=2.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/DasClown/drug-pipeline-mcp"
+Repository = "https://github.com/DasClown/drug-pipeline-mcp"
+Documentation = "https://github.com/DasClown/drug-pipeline-mcp#readme"
+Smithery = "https://smithery.ai/servers/crop-mcp/drug-pipeline"
+Changelog = "https://github.com/DasClown/drug-pipeline-mcp/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 http = [
     "mcp[httpx]>=1.0.0",
     "starlette>=0.37",
     "uvicorn>=0.27",
+]
+dev = [
+    "ruff>=0.4",
+    "pytest>=7.0",
 ]
 
 [project.scripts]
@@ -39,6 +50,13 @@ drug-pipeline = "drug_pipeline_cli:main"
 
 [tool.setuptools]
 packages = ["drug_pipeline"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

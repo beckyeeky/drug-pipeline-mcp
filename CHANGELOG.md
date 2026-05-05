@@ -1,8 +1,22 @@
 # Changelog — drug-pipeline-mcp
 
-## 2026-05-04
+## 2026-05-05
 
-### Added
+#### Added
+- **Tests** (`tests/`) — 31 Unit-Tests: Cache-Logik, Input-Validierung, Tool-Registrierung, Fehlerbehandlung
+- **CI/CD Multi-Python Matrix** (`.github/workflows/ci.yml`) — pytest auf Python 3.10, 3.11, 3.12 parallel
+- **PyPI Publish Workflow** (`.github/workflows/publish.yml`) — OIDC-basierter PyPI-Upload bei Releases
+- **Docker Multi-Arch Build** (`.github/workflows/docker.yml`) — ghcr.io: linux/amd64 + linux/arm64, Buildx-Caching, Semver-Tags
+- **smithery.json** — optimierte Smithery-Deployment-Konfiguration mit allen 16 Tools
+
+### Changed
+- **Dockerfile** — auf python:3.12-slim aktualisiert, tini für Signal-Handling, Labels, bessere HEALTHCHECK
+
+#### Added
+- **GitHub Actions CI** (`.github/workflows/ci.yml`) — ruff lint + smoke test bei jedem Push/PR
+- **Dockerfile** + **docker-compose.yml** — Container-Betrieb mit Healthcheck
+- **LICENSE** — MIT-Lizenz als separate Datei
+- **PyPI-Readiness** — URLs, dev dependencies, ruff-Konfig, License-Deprecation gefixt
 - **Issue Templates** (`.github/ISSUE_TEMPLATE/`) — Bug Report, Feature Request, Config
 - **CONTRIBUTING.md** — vollständiger Leitfaden für Contributionen
 - **Version-Sync** — pyproject.toml auf v0.5.0 aktualisiert

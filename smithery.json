@@ -1,0 +1,89 @@
+{
+  "$schema": "https://smithery.ai/schemas/deployment.json",
+  "name": "drug-pipeline-mcp",
+  "description": "Pharmaceutical R&D Pipeline Intelligence — clinical trials, FDA/EMA approvals, safety data, drug labels, patents & publications",
+  "version": "0.5.0",
+  "author": "DasClown",
+  "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
+  "type": "docker",
+  "docker": {
+    "image": "ghcr.io/dasclown/drug-pipeline-mcp:latest",
+    "ports": [8081],
+    "healthcheck": {
+      "path": "/",
+      "interval": 30,
+      "timeout": 10
+    }
+  },
+  "capabilities": {
+    "tools": {
+      "search_trials": {
+        "description": "Search ClinicalTrials.gov for clinical trials by condition, phase, status, sponsor"
+      },
+      "get_trial_detail": {
+        "description": "Full protocol for a specific clinical trial by NCT ID"
+      },
+      "lookup_drug": {
+        "description": "Drug info: active ingredients, ATC classification, NDC, RxNorm"
+      },
+      "get_approvals": {
+        "description": "FDA approval history with submission dates and status"
+      },
+      "get_eu_approvals": {
+        "description": "EU/EMA authorization status — brand names, ATC, orphan/biosimilar flags"
+      },
+      "get_safety_data": {
+        "description": "FAERS adverse event reports — top reactions, serious outcomes"
+      },
+      "approved_for_condition": {
+        "description": "Find EU-approved drugs for a medical condition"
+      },
+      "get_trial_results": {
+        "description": "Trial outcome measures, adverse events, baseline, participant flow"
+      },
+      "list_orphan_drugs": {
+        "description": "EU orphan drug designations filterable by therapeutic area"
+      },
+      "company_pipeline": {
+        "description": "Company R&D pipeline — all trials grouped by phase + EU approval status"
+      },
+      "search_publications": {
+        "description": "PubMed search for drug/trial publications"
+      },
+      "get_drug_label": {
+        "description": "FDA drug label — indications, boxed warnings, contraindications, dosing"
+      },
+      "get_recalls": {
+        "description": "FDA drug recalls — Class I/II/III, reasons, dates, firms"
+      },
+      "detect_safety_signals": {
+        "description": "PRR safety signal detection from FAERS data"
+      },
+      "get_patent_expiry": {
+        "description": "Patent & exclusivity info from FDA data"
+      },
+      "drug_pipeline": {
+        "description": "Composite: drug info + FDA + EU + safety + label + signals + recalls + trials + publications + patent"
+      }
+    }
+  },
+  "config": {
+    "language": {
+      "type": "string",
+      "default": "en",
+      "enum": ["en", "de"],
+      "description": "Output language"
+    },
+    "max_trials": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 100,
+      "description": "Max clinical trials per search"
+    }
+  },
+  "pricing": {
+    "type": "free",
+    "reason": "All data sources are free public APIs"
+  }
+}
