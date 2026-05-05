@@ -64,6 +64,31 @@ class TestCache:
         assert result is not None
 
 
+class TestDrugInteractions:
+    """Drug interactions validation."""
+
+    def test_invalid_drug_name_empty(self):
+        from drug_pipeline.sources import get_drug_interactions
+        result = get_drug_interactions("")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_drug_name_short(self):
+        from drug_pipeline.sources import get_drug_interactions
+        result = get_drug_interactions("A")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_drug_interactions_schema(self):
+        """Verify the function returns correct schema on API call."""
+        from drug_pipeline.sources import get_drug_interactions
+        result = get_drug_interactions("aspirin")
+        if result.get("status") == "ok":
+            assert "label_interactions" in result
+            assert "co_reported_in_faers" in result
+            assert "data_sources" in result
+
+
 class TestSearchTrialsValidation:
     """Input validation for search_trials."""
 

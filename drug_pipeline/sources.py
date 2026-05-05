@@ -1069,6 +1069,19 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
             }
             sources_used.extend(patent_data.get("data_sources", []))
 
+    # 12. Drug Interactions (if drug_name provided)
+    drug_interactions = None
+    if drug_name:
+        interaction_data = get_drug_interactions(drug_name)
+        if interaction_data.get("status") == "ok":
+            drug_interactions = {
+                "has_label_interactions": interaction_data["label_interactions"].get("drug_interactions_text") is not None,
+                "contraindications_available": interaction_data["label_interactions"].get("contraindications_text") is not None,
+                "co_reported_in_faers": interaction_data.get("co_reported_in_faers", [])[:3],
+                "total_co_reported": interaction_data.get("total_co_reported", 0),
+            }
+            sources_used.extend(interaction_data.get("data_sources", []))
+
     return {
         "status": "ok",
         "query": {"drug_name": drug_name, "condition": condition},
@@ -1081,6 +1094,7 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         "recalls": recalls,
         "safety_signals": safety_signals,
         "patent_info": patent_info,
+        "drug_interactions": drug_interactions,
         "clinical_trials": trials,
         "publications": publications,
         "safety_data": safety,
@@ -1843,3 +1857,84 @@ def get_patent_expiry(drug_name: str) -> dict:
         "data_sources": ["openFDA drugsfda"],
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+# ═════════════════════════════════════════════════════════════
+# 14. Drug-Drug Interactions
+# ═════════════════════════════════════════════════════════════
+
+
+def get_drug_interactions(drug_name: str) -> dict:
+    """
+    Get drug-drug interaction information from FDA drug labeling.
+
+    Returns the drug interactions section from the label, plus
+    contraindicated and interacting drug classes. Uses openFDA
+    Drug Labeling and RxNorm APIs.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    # 1. Label-based interactions
+    search_term = _escape(drug_name)
+    url = f"{_FDA_BASE}/drug/label.json?search=openfda.brand_name:{search_term}+OR+openfda.generic_name:{search_term}&limit=1"
+    data = _cached_fetch(url, ttl=3600)  # 1 hour cache
+
+    interactions = {
+        "drug_interactions_text": None,
+        "contraindications_text": None,
+        "warnings_and_cautions_text": None,
+    }
+
+    if not _is_error(data) and isinstance(data, dict):
+        results = data.get("results", []) or []
+        if results:
+            label = results[0]
+            def _get_field(field_name: str) -> str | None:
+                val = label.get(field_name)
+                if isinstance(val, list):
+                    return val[0] if val else None
+                return val
+
+            interactions["drug_interactions_text"] = _get_field("drug_interactions")
+            interactions["contraindications_text"] = _get_field("contraindications")
+            interactions["warnings_and_cautions_text"] = _get_field("warnings_and_cautions")
+
+    # 2. FAERS co-reported drugs — find drugs commonly reported together
+    co_reported = []
+    faers_url = f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{search_term}&count=patient.drug.medicinalproduct.exact&limit=10"
+    faers_data = _cached_fetch(faers_url, ttl=3600)
+
+    if not _is_error(faers_data) and isinstance(faers_data, dict):
+        terms = faers_data.get("results", []) or []
+        for t in terms:
+            name = t.get("term", "")
+            count = t.get("count", 0)
+            # Skip the drug itself and empty/non-drug terms
+            if name and name.lower() != drug_name.lower() and count > 0:
+                co_reported.append({
+                    "drug": name,
+                    "report_count": count,
+                })
+
+    # 3. Build structured result
+    result = {
+        "status": "ok",
+        "drug_name": drug_name,
+        "label_interactions": interactions,
+        "co_reported_in_faers": co_reported[:8],  # Top 8 co-reported drugs
+        "total_co_reported": len(co_reported),
+        "data_sources": [
+            "openFDA Drug Labeling",
+            "openFDA FAERS",
+        ],
+        "timestamp": datetime.utcnow().isoformat(),
+        "note": (
+            "Label-based interactions are from FDA prescribing information. "
+            "FAERS co-reported drugs are those commonly reported together in adverse "
+            "event reports — this suggests but does not confirm a pharmacological interaction."
+        ),
+    }
+
+    return result

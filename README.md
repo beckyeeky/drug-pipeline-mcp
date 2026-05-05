@@ -1,11 +1,14 @@
 # 💊 drug-pipeline-mcp
 
+[![CI](https://github.com/DasClown/drug-pipeline-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/DasClown/drug-pipeline-mcp/actions/workflows/ci.yml)
+[![Docker](https://ghcr.io/dasclown/drug-pipeline-mcp/badge.svg?style=flat)](https://ghcr.io/dasclown/drug-pipeline-mcp)
 [![Smithery](https://smithery.ai/badge/@crop-mcp/drug-pipeline)](https://smithery.ai/servers/crop-mcp/drug-pipeline)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/drug-pipeline-mcp?label=PyPI)](https://pypi.org/project/drug-pipeline-mcp/)
 [![GitHub stars](https://img.shields.io/github/stars/DasClown/drug-pipeline-mcp?style=flat)](https://github.com/DasClown/drug-pipeline-mcp/stargazers)
 
-**Pharmaceutical R&D Pipeline Intelligence for AI Agents** — Clinical trials, FDA approvals, drug information & publications in one MCP server.
+**Pharmaceutical R&D Pipeline Intelligence for AI Agents** — Clinical trials, FDA/EMA approvals, safety data, drug interactions, drug labels, recalls, patents & publications in one MCP server.
 
 No hallucination. Every output traces to a source NCT ID, FDA application number, or PMID.
 
@@ -23,7 +26,7 @@ pip install drug-pipeline-mcp[http]
 drug-pipeline --http --port 8081
 ```
 
-## Tools (16)
+## Tools (17)
 
 | Tool | What it does | Data Source |
 |------|-------------|-------------|
@@ -42,7 +45,8 @@ drug-pipeline --http --port 8081
 | `get_recalls` | **FDA drug recalls** — Class I/II/III, reasons, dates, recalling firms | openFDA Enforcement |
 | `detect_safety_signals` | **PRR safety signal detection** — disproportionate adverse event analysis | openFDA FAERS |
 | `get_patent_expiry` | **Patent & exclusivity info** — approval dates, market exclusivity estimates | openFDA |
-| `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + trials + pubs + patent | All sources |
+| `get_drug_interactions` | **Drug-drug interactions** — FDA label interactions + FAERS co-reported drugs | openFDA Labeling + FAERS |
+| `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + interactions + trials + pubs + patent | All sources |
 
 ## Example Agent Queries
 

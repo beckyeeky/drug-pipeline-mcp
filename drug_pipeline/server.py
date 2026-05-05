@@ -48,6 +48,7 @@ from .sources import (
     get_recalls as _get_recalls,
     detect_safety_signals as _detect_safety_signals,
     get_patent_expiry as _get_patent_expiry,
+    get_drug_interactions as _get_drug_interactions,
     drug_pipeline_summary,
     VALID_PHASES,
     VALID_STATUSES,
@@ -336,6 +337,12 @@ def _handle_get_patent_expiry(**kwargs: Any) -> list[types.TextContent]:
     return _response(result)
 
 
+def _handle_get_drug_interactions(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_drug_interactions(validated.drug_name.strip())
+    return _response(result)
+
+
 def _response(data: dict) -> list[types.TextContent]:
     """Wrap a result dict in MCP TextContent."""
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
@@ -539,6 +546,20 @@ TOOLS = {
         "input_schema": DrugNameInput.model_json_schema(),
         "handler": _handle_get_patent_expiry,
     },
+    "get_drug_interactions": {
+        "description": (
+            "Get drug-drug interaction information for a drug using FDA "
+            "labeling data and FAERS adverse event reports. Returns the "
+            "official drug interactions section from the FDA label, "
+            "contraindications, and warnings. Also lists drugs commonly "
+            "co-reported in adverse event reports (FAERS) as a signal "
+            "for potential interactions. "
+            "Use this to answer: 'Does this drug interact with other "
+            "medications?' or 'What should I avoid when taking this drug?'"
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_drug_interactions,
+    },
 }
 
 
@@ -648,7 +669,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
         return JSONResponse({
             "server": "drug-pipeline",
             "version": __version__,
-            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, and company pipelines. 16 tools, 6 data sources.",
+            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, and company pipelines. 17 tools, 6 data sources.",
             "tools": list(TOOLS.keys()),
             "docs": "https://github.com/DasClown/drug-pipeline-mcp",
             "endpoints": {

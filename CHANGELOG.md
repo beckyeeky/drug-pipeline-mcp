@@ -1,5 +1,17 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-05 (v0.5.4)
+
+#### Added
+- **get_drug_interactions Tool (#17)** — FDA Label Interactions + FAERS Co-Reported Drugs
+- **README Badges**: CI passing, Docker ghcr.io, PyPI version
+- **Smithery-Konfiguration**: get_drug_interactions registriert
+
+### Changed
+- **drug_pipeline Composite** — enthält jetzt drug_interactions-Sektion
+- **README**: 17 Tools dokumentiert
+- **Server Card**: auf 17 Tools aktualisiert
+
 ## 2026-05-05 (v0.5.3)
 
 #### Fixed

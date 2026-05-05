@@ -62,6 +62,9 @@
       "get_patent_expiry": {
         "description": "Patent & exclusivity info from FDA data"
       },
+      "get_drug_interactions": {
+        "description": "Drug-drug interactions — FDA label interactions + FAERS co-reported drugs"
+      },
       "drug_pipeline": {
         "description": "Composite: drug info + FDA + EU + safety + label + signals + recalls + trials + publications + patent"
       }

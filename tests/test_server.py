@@ -21,7 +21,7 @@ class TestToolRegistration:
     """All tools are registered correctly."""
 
     def test_tools_count(self):
-        assert len(TOOLS) >= 16, f"Expected 16+ tools, got {len(TOOLS)}"
+        assert len(TOOLS) >= 17, f"Expected 17+ tools, got {len(TOOLS)}"
 
     def test_core_tools_present(self):
         core = [
@@ -43,6 +43,7 @@ class TestToolRegistration:
             "get_recalls",
             "detect_safety_signals",
             "get_patent_expiry",
+            "get_drug_interactions",
             "approved_for_condition",
             "get_trial_results",
             "list_orphan_drugs",
@@ -97,3 +98,11 @@ class TestHandlerErrors:
         data = json.loads(result[0].text)
         assert data["status"] == "error"
         assert data["error_code"] == "UNKNOWN_TOOL"
+
+    def test_drug_interactions_tool_has_handler(self):
+        """get_drug_interactions must have a callable handler."""
+        assert callable(TOOLS["get_drug_interactions"]["handler"])
+
+    def test_all_handlers_callable(self):
+        for name, meta in TOOLS.items():
+            assert callable(meta["handler"]), f"Handler for '{name}' is not callable"
