@@ -9,3 +9,6 @@ contact_links:
   - name: 🧪 Smithery
     url: https://smithery.ai/servers/crop-mcp/drug-pipeline
     about: Installiere den Server via Smithery
+  - name: 💬 Discussions
+    url: https://github.com/DasClown/drug-pipeline-mcp/discussions
+    about: Fragen, Ideen & Diskussionen mit der Community

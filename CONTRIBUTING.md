@@ -33,7 +33,17 @@ Sei respektvoll, konstruktiv und sachlich. Dieses Projekt lebt von offener Zusam
 - **💡 Feature vorschlagen** → Issue aufmachen (Template nutzen)
 - **🔧 Code beitragen** → PR stellen (siehe unten)
 - **📖 Dokumentation verbessern** → README / Wiki PR
+- **💬 An Discussions teilnehmen** — Fragen & Ideen vorab diskutieren
 - **⭐ Star geben** — hilft bei Sichtbarkeit!
+
+## 💬 Discussions
+
+Neben Issues haben wir **GitHub Discussions**! Hier kannst du:
+- **Fragen stellen** — „Wie mache ich X mit drug-pipeline-mcp?"
+- **Ideen diskutieren** — bevor du einen Feature Request schreibst
+- **Show & Tell** — zeig, was du mit dem Tool gebaut hast
+
+👉 https://github.com/DasClown/drug-pipeline-mcp/discussions
 
 ## Issues
 

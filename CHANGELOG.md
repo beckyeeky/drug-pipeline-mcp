@@ -1,5 +1,11 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-05 (v0.5.5)
+
+#### Fixed
+- **🐛 Health Check PubMed-Endpunkt** — `echo`-Endpoint war veraltet (HTTP 400), auf `einfo.fcgi` umgestellt. Alle 9 Checks passen jetzt.
+- **Health Check Script** nach `/root/.hermes/profiles/drug-pipeline/scripts/` kopiert für Cron-Job-Zugriff.
+
 ## 2026-05-05 (v0.5.4)
 
 #### Added
