@@ -7,6 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/drug-pipeline-mcp?label=PyPI)](https://pypi.org/project/drug-pipeline-mcp/)
 [![GitHub stars](https://img.shields.io/github/stars/DasClown/drug-pipeline-mcp?style=flat)](https://github.com/DasClown/drug-pipeline-mcp/stargazers)
+[![Discussions](https://img.shields.io/github/discussions/DasClown/drug-pipeline-mcp?style=flat&label=Discussions&color=informational)](https://github.com/DasClown/drug-pipeline-mcp/discussions)
 
 **Pharmaceutical R&D Pipeline Intelligence for AI Agents** — Clinical trials, FDA/EMA approvals, safety data, drug interactions, drug labels, recalls, patents & publications in one MCP server.
 
@@ -102,7 +103,7 @@ drug-pipeline --http --port 8081
 drug-pipeline-mcp/
 ├── drug_pipeline/
 │   ├── __init__.py        # Version
-│   ├── server.py          # MCP server (16 tools)
+│   ├── server.py          # MCP server (17 tools)
 │   └── sources.py         # Data source fetchers
 ├── drug_pipeline_cli.py   # CLI entry point
 ├── pyproject.toml
@@ -130,6 +131,67 @@ Every result includes:
 - **PMID** → `https://pubmed.ncbi.nlm.nih.gov/PMID...`
 
 No calculated fields, no predictions, no "ungefähre" estimates.
+
+---
+
+## Client Integration
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "drug-pipeline": {
+      "command": "python3",
+      "args": ["-m", "drug_pipeline.server"]
+    }
+  }
+}
+```
+
+### Cursor / VS Code
+
+Add to your `.cursor/mcp.json` or VS Code MCP config:
+
+```json
+{
+  "mcpServers": {
+    "drug-pipeline": {
+      "command": "uvx",
+      "args": ["drug-pipeline-mcp"]
+    }
+  }
+}
+```
+
+### HTTP / SSE (Remote)
+
+```bash
+pip install drug-pipeline-mcp[http]
+drug-pipeline --http --port 8081
+```
+
+Connect via SSE at `http://your-server:8081/sse`.
+
+### Smithery
+
+[![Smithery](https://smithery.ai/badge/@crop-mcp/drug-pipeline)](https://smithery.ai/servers/crop-mcp/drug-pipeline)
+
+One-click deploy on Smithery. No config needed.
+
+---
+
+## 🤝 Getting Help & Contributing
+
+| Channel | Purpose |
+|---------|---------|
+| **[💬 GitHub Discussions](https://github.com/DasClown/drug-pipeline-mcp/discussions)** | Questions before coding, feature ideas, community chat |
+| **[🐛 GitHub Issues](https://github.com/DasClown/drug-pipeline-mcp/issues)** | Bug reports, confirmed feature requests |
+| **[📖 CONTRIBUTING.md](CONTRIBUTING.md)** | Development setup, code style, testing |
+
+New contributors welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, branch naming, and release process.
+
+---
 
 ## Language
 
