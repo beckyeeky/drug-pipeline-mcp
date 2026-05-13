@@ -49,6 +49,20 @@ drug-pipeline --http --port 8081
 | `get_drug_interactions` | **Drug-drug interactions** — FDA label interactions + FAERS co-reported drugs | openFDA Labeling + FAERS |
 | `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + interactions + trials + pubs + patent | All sources |
 
+## Regulatory Intelligence
+
+Beyond drug-level approvals, this project also provides **multi-jurisdiction regulatory framework intelligence** for pipeline analysis. See [`docs/local-regulation-2026.md`](docs/local-regulation-2026.md) for a comprehensive reference:
+
+- 🇺🇸 **US IRA** — Medicare Part D price negotiation (Sep 2026), Small Molecule Penalty (7 yr vs 13 yr for biologics)
+- 🇩🇪 **Germany AMNOG** — Benefit assessment system, 2026 reform with fixed effect-size thresholds
+- 🇫🇷 **France HAS/CEPS** — SMR/ASMR ratings, 400–600 day access timelines
+- 🇮🇹 **Italy AIFA** — 21 regional formularies, payback mechanisms
+- 🇬🇧 **UK MHRA/NICE** — Post-Brexit ILAP pathway, £/QALY cost-effectiveness thresholds
+- 🇯🇵 **Japan PMDA/NHI** — Sakigake designation, biennial price revision
+- 🇨🇳 **China NMPA/NRDL** — Annual –61% price negotiation, PD-1 price war
+
+**Pipeline Risk Matrix:** Small molecules face IRA 7-year clock + AMNOG effect-size scrutiny. Orphan drugs enjoy protection. Biologics have 13-year IRA window.
+
 ## Example Agent Queries
 
 > *"What's in the pipeline for GLP-1 agonists?"*

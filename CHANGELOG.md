@@ -1,6 +1,20 @@
 # Changelog — drug-pipeline-mcp
 
-## 2026-05-05 (v0.5.5)
+## 2026-05-13 (v0.6.0)
+
+#### Added (Regulatory Intelligence)
+- **📄 `docs/local-regulation-2026.md`** — Comprehensive multi-jurisdiction regulatory reference covering all 7 major pharma markets (US IRA, DE AMNOG, FR HAS/CEPS, IT AIFA, UK MHRA/NICE, JP PMDA/NHI, CN NMPA/NRDL)
+- **Pipeline Risk Matrix** — Small molecule vs. biologic vs. orphan risk assessment across jurisdictions
+- **IRA 2026 timeline** — First Medicare price negotiation takes effect Sep 1, 2026 (10 drugs, ~$50.2B spend)
+- **AMNOG Reform 2026** — Fixed effect-size thresholds (<15% RRR = no added benefit), stricter combo rules
+- **China NRDL analysis** — Annual –61% average price cuts, PD-1 price war (–70%)
+- **NICE key appraisals** — Wegovy, Mounjaro, Alzheimer drugs status
+
+### Changed
+- **README** — Added `docs/` reference and regulatory intelligence use cases
+- **pyproject.toml** — v0.5.3 → v0.6.0
+
+---
 
 #### Fixed
 - **🐛 Health Check PubMed-Endpunkt** — `echo`-Endpoint war veraltet (HTTP 400), auf `einfo.fcgi` umgestellt. Alle 9 Checks passen jetzt.
