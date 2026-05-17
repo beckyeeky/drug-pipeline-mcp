@@ -86,7 +86,17 @@
     }
   },
   "pricing": {
-    "type": "free",
-    "reason": "All data sources are free public APIs"
+    "type": "paid",
+    "model": "per_call",
+    "rate": 0.003,
+    "currency": "USD",
+    "description": "$0.003 per tool call. Free tier: 10 calls/day for evaluation.",
+    "reason": "Pharmaceutical R&D intelligence — clinical trial screening, safety signals, regulatory intelligence at enterprise scale",
+    "plans": [
+      {"name": "Free", "calls_per_day": 10, "price": 0},
+      {"name": "Starter", "calls_per_day": 100, "price_monthly": 49},
+      {"name": "Pro", "calls_per_day": 500, "price_monthly": 199},
+      {"name": "Enterprise", "calls_per_day": "unlimited", "price_monthly": 999}
+    ]
   }
 }
