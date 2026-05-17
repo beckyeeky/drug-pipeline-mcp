@@ -2488,18 +2488,32 @@ def get_us_orphan_designations(drug_name: str) -> dict:
     hits = data.get("hits", [])
     orphan_entries = []
     for hit in hits:
-        name = hit.get("name", "")
         orphan_field = hit.get("fda_orphan_drug", [])
         if not orphan_field:
             continue
         for entry in orphan_field if isinstance(orphan_field, list) else [orphan_field]:
+            # Get substance name from entry.generic_name or hit.name or hit._id
+            substance = entry.get("generic_name", "") or hit.get("name", "") or hit.get("_id", "")
+            # orphan_designation can be a string, a dict with original_text/parsed_text, or missing
+            od = entry.get("orphan_designation", "")
+            if isinstance(od, dict):
+                orphan_designation_str = od.get("parsed_text", od.get("original_text", ""))
+            else:
+                orphan_designation_str = str(od) if od else ""
+            # approval_status vs designation_status
+            desig_status = entry.get("designation_status", "")
+            approval = entry.get("approval_status", "")
+            # Some entries embed approval in designation_status like "Designated/Approved"
+            if not approval and "/" in desig_status:
+                parts = desig_status.split("/")
+                approval = parts[-1] if len(parts) > 1 else ""
             orphan_entries.append({
-                "substance": name,
-                "designation_number": entry.get("designation_number", ""),
-                "orphan_designation": entry.get("orphan_designation", ""),
-                "designation_status": entry.get("designation_status", ""),
+                "substance": substance,
+                "orphan_designation": orphan_designation_str,
+                "designation_status": desig_status,
                 "designated_date": entry.get("designated_date", ""),
-                "approval_status": entry.get("approval_status", ""),
+                "approval_status": approval,
+                "marketing_approval_date": entry.get("marketing_approval_date", ""),
                 "approved_labeled_indication": entry.get("approved_labeled_indication", ""),
                 "exclusivity_end_date": entry.get("exclusivity_end_date", ""),
             })
@@ -2581,87 +2595,91 @@ _NADAC_BASE_CSV = "https://download.medicaid.gov/data"
 
 def get_drug_pricing(drug_name: str) -> dict:
     """
-    Get US drug pricing data from NADAC (Medicaid) and CMS.
+    Get US drug product and pricing reference information.
 
-    Uses NADAC National Average Drug Acquisition Cost for pharmacy-level
-    pricing. Returns price per unit, effective date, and pricing unit.
+    Primary: openFDA NDC Directory (drug product identification, NDC codes,
+    manufacturer, brand/generic names, strength, dosage form).
+
+    Note: Real-time NADAC acquisition costs are available via CMS/Medicaid
+    but their API has inconsistent uptime. For live pricing, use:
+    - NADAC weekly CSV: https://data.medicaid.gov (search "NADAC")
+    - CMS Part B/D spending: https://data.cms.gov (free API key)
+    - GoodRx / Drugs@FDA for reference pricing online
     """
     if not drug_name or len(drug_name) < 2:
         return {"status": "error", "error_code": "INVALID_INPUT",
                 "message": "drug_name must be at least 2 characters"}
 
-    # Try all recent NADAC datasets in parallel for the drug
-    nadac_resource_ids = [
-        "fbb83258-11c7-47f5-8b18-5f8e79f7e704",  # 2026
-        "f38d0706-1239-442c-a3cc-40ef1b686ac0",  # 2025
-        "99315a95-37ac-4eee-946a-3c523b4c481e",  # 2024
-    ]
-
-    pricing_results = []
     search_term = drug_name.strip().upper()
 
-    for rid in nadac_resource_ids:
-        try:
-            sql = urllib.parse.quote(
-                f'SELECT * FROM "{rid}" WHERE "NDC Description" LIKE \'%{search_term}%\' LIMIT 5'
-            )
-            url = f"https://data.medicaid.gov/api/3/action/datastore_search_sql?sql={sql}"
+    # OpenFDA NDC directory — reliable drug product identification
+    fda_search = urllib.parse.quote(f"brand_name:{search_term}")
+    url = f"{_FDA_BASE}/drug/ndc.json?search={fda_search}&limit=15"
 
-            _rate_limited()
-            data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
-            if _is_error(data) or not isinstance(data, dict):
-                continue
+    _rate_limited()
+    data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
+    if _is_error(data) or not isinstance(data, dict):
+        return {"status": "error", "error_code": "HTTP_ERROR",
+                "message": "Failed to query NDC directory"}
 
-            records = data.get("result", {}).get("records", [])
-            for rec in records:
-                pricing_results.append({
-                    "ndc": rec.get("NDC", ""),
-                    "product_name": rec.get("NDC Description", ""),
-                    "nadac_per_unit": rec.get("NADAC Per Unit", ""),
-                    "effective_date": rec.get("Effective Date", ""),
-                    "pricing_unit": rec.get("Pricing Unit", ""),
-                    "pharmacy_type": rec.get("Pharmacy Type", ""),
-                })
-        except Exception:
-            continue
+    results = data.get("results", [])
+    if not results:
+        # Try generic name search
+        fda_search2 = urllib.parse.quote(f"generic_name:{search_term}")
+        url2 = f"{_FDA_BASE}/drug/ndc.json?search={fda_search2}&limit=15"
+        _rate_limited()
+        data2 = _cached_fetch(url2, ttl=_OT_CACHE_TTL)
+        if isinstance(data2, dict):
+            results = data2.get("results", [])
 
-    # Also try by NDC from openFDA lookup
-    # First get NDC candidates
-    ndc_candidates = []
-    try:
-        drug_info = search_drug(drug_name)
-        if drug_info.get("found"):
-            ndc = drug_info.get("ndc") or drug_info.get("product_ndc", "")
-            if ndc:
-                ndc_candidates.append(ndc)
-    except Exception:
-        pass
-
-    if not pricing_results:
+    if not results:
         return {
             "status": "ok",
             "drug_name": drug_name,
             "found": False,
-            "message": f"No NADAC pricing data found for '{drug_name}'",
-            "sources_checked": len(nadac_resource_ids),
-            "note": "NADAC covers outpatient prescription drugs. Pricing data limited for biologics, hospital-only, or very new drugs.",
-            "data_source": "NADAC (data.medicaid.gov)",
+            "message": f"No NDC product data found for '{drug_name}'",
+            "data_source": "openFDA NDC Directory",
+            "alternative_sources": [
+                "NADAC weekly CSV: https://data.medicaid.gov (search 'NADAC')",
+                "CMS Part B/D spending: https://data.cms.gov (free API key required)",
+                "GoodRx: https://goodrx.com",
+            ],
+            "note": "openFDA NDC contains drug product identification. Live US pricing requires CMS/NADAC data.",
             "timestamp": datetime.utcnow().isoformat(),
         }
 
-    # Get best price (most recent)
-    pricing_results.sort(key=lambda r: r.get("effective_date", ""), reverse=True)
+    products = []
+    for r in results[:10]:
+        active_ing = r.get("active_ingredients", [{}])
+        ing_name = active_ing[0].get("name", "") if active_ing else ""
+        ing_strength = active_ing[0].get("strength", "") if active_ing else ""
+
+        products.append({
+            "brand_name": r.get("brand_name", ""),
+            "generic_name": r.get("generic_name", ""),
+            "active_ingredient": ing_name,
+            "strength": ing_strength,
+            "dosage_form": r.get("dosage_form", ""),
+            "route": r.get("route", ""),
+            "labeler_name": r.get("labeler_name", ""),
+            "product_ndc": r.get("product_ndc", ""),
+            "is_otc": bool("OTC" in r.get("marketing_status", "").upper()),
+        })
 
     return {
         "status": "ok",
         "drug_name": drug_name,
         "found": True,
-        "nadac_entries": pricing_results[:10],
-        "entry_count": len(pricing_results),
-        "most_recent_entry": pricing_results[0] if pricing_results else None,
-        "data_source": "NADAC (data.medicaid.gov)",
-        "api_url": "https://data.medicaid.gov",
-        "note": "NADAC = National Average Drug Acquisition Cost. Updated weekly by CMS. Does not include wholesale or negotiated prices.",
+        "product_count": len(products),
+        "products": products,
+        "data_source": "openFDA NDC Directory",
+        "pricing_note": (
+            "NDC directory contains product identification only (no prices). "
+            "For US acquisition costs: use NADAC (https://data.medicaid.gov, search 'NADAC') "
+            "or CMS Part B/D spending (https://data.cms.gov, free API key). "
+            "NADAC is updated weekly, covers outpatient prescription drugs."
+        ),
+        "api_url": "https://api.fda.gov/drug/ndc.json",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
@@ -2799,55 +2817,61 @@ def get_trial_sites(nct_id: str) -> dict:
 
     Extracts facility names, cities, countries, recruitment status,
     and contact information from the full trial protocol.
+    Calls ClinicalTrials.gov v2 API directly.
     """
     nct_id = nct_id.strip().upper()
     if not nct_id.startswith("NCT") or len(nct_id) < 8:
         return {"status": "error", "error_code": "INVALID_INPUT",
                 "message": "NCT ID must start with 'NCT' and be at least 8 characters"}
 
-    try:
-        detail = get_trial_detail(nct_id)
-    except Exception as e:
+    # Fetch direct from ClinicalTrials.gov v2 API (not via get_trial_detail wrapper)
+    url = f"{_CLINICALTRIALS_BASE}/studies/{nct_id}"
+    _rate_limited()
+    raw = _cached_fetch(url, ttl=300)
+    if _is_error(raw):
         return {"status": "error", "error_code": "FETCH_ERROR",
-                "message": f"Failed to fetch trial detail: {str(e)[:100]}"}
+                "message": f"Failed to fetch trial data for {nct_id}"}
 
-    if detail.get("status") != "ok":
-        return {"status": "error", "error_code": detail.get("error_code", "FETCH_ERROR"),
-                "message": detail.get("message", "Failed to get trial detail")}
+    if not isinstance(raw, dict):
+        return {"status": "error", "error_code": "PARSE_ERROR",
+                "message": "Unexpected API response format"}
 
-    # ClinicalTrials.gov v2 API — the detail comes as protocolSection
-    protocol = detail.get("protocolSection", detail)
-    locations_module = protocol.get("locationsModule", {})
-    contacts_module = protocol.get("contactsLocationsModule", {})
+    protocol = raw.get("protocolSection", {})
+    contacts_mod = protocol.get("contactsLocationsModule", {})
 
-    # Try both v2 & v1 location structures
-    locations = locations_module.get("locations", []) or contacts_module.get("locations", [])
+    # Locations array from contactsLocationsModule (v2 API)
+    locations = []
+    if isinstance(contacts_mod, dict):
+        locations = contacts_mod.get("locations", [])
 
     if not locations:
-        # v1 API fallback
-        v1_loc = detail.get("location", []) or detail.get("locations", [])
-        if v1_loc:
-            locations = v1_loc if isinstance(v1_loc, list) else [v1_loc]
+        return {
+            "status": "ok",
+            "nct_id": nct_id,
+            "found": False,
+            "site_count": 0,
+            "message": "No location data available for this trial",
+            "data_source": "ClinicalTrials.gov v2 API",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
     sites = []
     country_counts: dict[str, int] = {}
 
     for loc in locations:
+        if not isinstance(loc, dict):
+            continue
+
         fac = loc.get("facility", "")
         if isinstance(fac, dict):
             fac = fac.get("name", "")
+
         city = loc.get("city", "")
         state = loc.get("state", "")
+        zip_code = loc.get("zip", "")
         country = loc.get("country", "")
         status = loc.get("status", loc.get("recruitmentStatus", ""))
-        contact = loc.get("contact", {})
-
-        # Contact info
-        contact_name = ""
-        contact_phone = ""
-        if isinstance(contact, dict):
-            contact_name = contact.get("name", "")
-            contact_phone = contact.get("phone", "")
+        contact = loc.get("contact", {}) or {}
 
         location_str = ", ".join(filter(None, [city, state, country]))
         country_c = country or "Unknown"
@@ -2857,33 +2881,35 @@ def get_trial_sites(nct_id: str) -> dict:
             "location": location_str,
             "city": city or "",
             "state": state or "",
+            "zip": zip_code or "",
             "country": country_c,
             "status": status or "",
-            "contact_name": contact_name,
-            "contact_phone": contact_phone,
+            "contact_name": contact.get("name", "") if isinstance(contact, dict) else "",
+            "contact_phone": contact.get("phone", "") if isinstance(contact, dict) else "",
         })
         country_counts[country_c] = country_counts.get(country_c, 0) + 1
 
-    # Global central contact
-    central_contact = {}
-    if isinstance(contacts_module, dict):
-        cc = contacts_module.get("centralContacts", [])
-        if isinstance(cc, list) and cc:
-            c = cc[0]
-            central_contact = {
-                "name": c.get("name", ""),
-                "phone": c.get("phone", ""),
-                "email": c.get("email", ""),
-            }
+    # Overall officials (investigators / central contacts)
+    officials = []
+    if isinstance(contacts_mod, dict):
+        for off in contacts_mod.get("overallOfficials", []):
+            if isinstance(off, dict):
+                officials.append({
+                    "name": off.get("name", ""),
+                    "role": off.get("role", ""),
+                    "affiliation": off.get("affiliation", ""),
+                })
 
-    # Overall status from study
+    # Trial overview
     status_module = protocol.get("statusModule", {})
-    overall_status = status_module.get("overallStatus", "")
+    id_module = protocol.get("identificationModule", {})
 
     return {
         "status": "ok",
         "nct_id": nct_id,
-        "trial_status": overall_status,
+        "found": True,
+        "trial_title": id_module.get("briefTitle", ""),
+        "trial_status": status_module.get("overallStatus", ""),
         "site_count": len(sites),
         "country_count": len(country_counts),
         "geographic_distribution": [
@@ -2891,8 +2917,8 @@ def get_trial_sites(nct_id: str) -> dict:
             for c, n in sorted(country_counts.items(), key=lambda x: -x[1])
         ],
         "sites": sites,
-        "central_contact": central_contact,
-        "data_source": "ClinicalTrials.gov",
+        "overall_officials": officials,
+        "data_source": "ClinicalTrials.gov v2 API",
         "timestamp": datetime.utcnow().isoformat(),
     }
 

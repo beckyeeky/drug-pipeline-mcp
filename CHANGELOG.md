@@ -26,6 +26,11 @@
 - Version bumped to v0.7.0 (from v0.5.4 → v0.6.0 war pyproject.toml-only)
 - 10 data sources jetzt im HTTP Server Card gelistet
 
+#### Bugfixes (nach E2E-Test)
+- **`get_us_orphan_designations`**: MyChem.info API liefert `orphan_designation` als Dict (nicht String). Fix: extract via `parsed_text`. Substance via `entry.generic_name`. Status parst "Designated/Approved" → beide Felder korrekt.
+- **`get_drug_pricing`**: NADAC API (data.medicaid.gov) nicht stabil/reachable. Rewrite auf openFDA NDC Directory: zuverlässige Drug-Product-Identification mit NDC, Manufacturer, Strength, Form. Pricing-Note mit Verweis auf CMS/NADAC-Quellen.
+- **`get_trial_sites`**: `get_trial_detail()` gibt flattened Response ohne Location-Daten. Fix: Direkt-API-Call an ClinicalTrials.gov v2. Liefert jetzt Facilities, Geo-Distribution, Officials.
+
 ## 2026-05-17 (v0.5.4)
 
 #### Fixed

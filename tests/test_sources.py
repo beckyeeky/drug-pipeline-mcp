@@ -260,12 +260,12 @@ class TestDrugPricing:
         from drug_pipeline.sources import get_drug_pricing
         result = get_drug_pricing("atorvastatin")
         if result.get("status") == "ok" and result.get("found"):
-            assert "nadac_entries" in result
-            assert "most_recent_entry" in result
-            e = result["nadac_entries"][0]
-            assert "nadac_per_unit" in e
-            assert "ndc" in e
-            assert "effective_date" in e
+            assert "products" in result
+            assert "product_count" in result
+            e = result["products"][0]
+            assert "brand_name" in e
+            assert "product_ndc" in e
+            assert "labeler_name" in e
 
 
 class TestListBiosimilars:
