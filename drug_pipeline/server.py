@@ -49,6 +49,8 @@ from .sources import (
     detect_safety_signals as _detect_safety_signals,
     get_patent_expiry as _get_patent_expiry,
     get_drug_interactions as _get_drug_interactions,
+    get_opentargets_drug as _get_opentargets_drug,
+    get_dailymed_label as _get_dailymed_label,
     drug_pipeline_summary,
     VALID_PHASES,
     VALID_STATUSES,
@@ -343,6 +345,18 @@ def _handle_get_drug_interactions(**kwargs: Any) -> list[types.TextContent]:
     return _response(result)
 
 
+def _handle_get_opentargets_drug(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_opentargets_drug(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_get_dailymed_label(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_dailymed_label(validated.drug_name.strip())
+    return _response(result)
+
+
 def _response(data: dict) -> list[types.TextContent]:
     """Wrap a result dict in MCP TextContent."""
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
@@ -559,6 +573,30 @@ TOOLS = {
         ),
         "input_schema": DrugNameInput.model_json_schema(),
         "handler": _handle_get_drug_interactions,
+    },
+    "get_opentargets_drug": {
+        "description": (
+            "Get drug-target intelligence from EMBL-EBI's Open Targets Platform. "
+            "Returns mechanisms of action, drug targets, clinical development stage, "
+            "drug type (e.g. Antibody, Small molecule), trade names, and known indications. "
+            "Uses the free Open Targets GraphQL API (no auth required). "
+            "Use this to answer: 'What is the mechanism of action?' or "
+            "'What targets does this drug bind?' or 'What clinical stage has it reached?'"
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_opentargets_drug,
+    },
+    "get_dailymed_label": {
+        "description": (
+            "Get drug label information from DailyMed (NIH/NLM). "
+            "Alternative to the openFDA Drug Labeling API. "
+            "DailyMed contains FDA Structured Product Labels (SPLs) with better "
+            "coverage of OTC and generic drugs than openFDA Labeling. "
+            "Returns the SPL set ID, version, published date, and a direct URL to the label. "
+            "Use this as a fallback when get_drug_label returns 'not found'."
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_dailymed_label,
     },
 }
 

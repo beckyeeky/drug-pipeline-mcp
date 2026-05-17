@@ -1994,3 +1994,147 @@ def get_drug_interactions(drug_name: str) -> dict:
     }
 
     return result
+
+
+# ═════════════════════════════════════════════════════════════
+# 14. Open Targets — Target Genetics, MoA & Drug Intelligence
+# ═════════════════════════════════════════════════════════════
+
+_OT_ENDPOINT = "https://api.platform.opentargets.org/api/v4/graphql"
+_OT_CACHE_TTL = 3600  # 1 hour
+
+
+def _chembl_search(drug_name: str) -> str | None:
+    """Search Open Targets for a drug by name, return ChEMBL ID."""
+    query = '{"query":"{ search(queryString: \\"' + drug_name + '\\", entityNames: [\\"drug\\"]) { hits { id name description } } }"}'
+    try:
+        req = urllib.request.Request(_OT_ENDPOINT, data=query.encode(), headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+        hits = data.get("data", {}).get("search", {}).get("hits", [])
+        for h in hits:
+            if drug_name.lower() in h.get("name", "").lower():
+                return h["id"]
+        return hits[0]["id"] if hits else None
+    except Exception:
+        return None
+
+
+def get_opentargets_drug(drug_name: str) -> dict:
+    """
+    Get drug-target intelligence from Open Targets Platform.
+
+    Uses EMBL-EBI's Open Targets GraphQL API to return: mechanisms of action,
+    drug targets, clinical development stage, drug type, and known indications.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    chembl_id = _chembl_search(drug_name)
+    if not chembl_id:
+        return {"status": "ok", "drug_name": drug_name, "found": False,
+                "message": f"No Open Targets entry found for '{drug_name}'"}
+
+    query = ('{"query":"{ drug(chemblId: \\"' + chembl_id + '\\") { '
+             'id name tradeNames maximumClinicalStage drugType '
+             'mechanismsOfAction { rows { actionType targetName } } '
+             'indications { rows { name status } } '
+             'adverseEvents { rows { name count } } '
+             'pharmacogenomics { rows { variantAnnotation } } } }"}')
+
+    try:
+        _rate_limited()
+        req = urllib.request.Request(_OT_ENDPOINT, data=query.encode(),
+                                     headers={"Content-Type": "application/json",
+                                              "User-Agent": "drug-pipeline-mcp/0.5"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read())
+    except Exception as e:
+        return {"status": "error", "error_code": "HTTP_ERROR",
+                "message": f"Open Targets API error: {str(e)[:100]}"}
+
+    drug = data.get("data", {}).get("drug")
+    if not drug:
+        return {"status": "ok", "drug_name": drug_name, "found": False,
+                "message": "No drug data returned from Open Targets"}
+
+    moa = drug.get("mechanismsOfAction", {}).get("rows", [])
+    indications = drug.get("indications", {}).get("rows", [])
+    adverse = drug.get("adverseEvents", {}).get("rows", [])
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "chembl_id": chembl_id,
+        "found": True,
+        "generic_name": drug.get("name"),
+        "trade_names": drug.get("tradeNames", []),
+        "drug_type": drug.get("drugType"),
+        "max_clinical_stage": drug.get("maximumClinicalStage"),
+        "mechanisms_of_action": [
+            {"type": m.get("actionType"), "target": m.get("targetName")}
+            for m in moa if m.get("targetName")
+        ],
+        "indications": [
+            {"name": ind.get("name"), "status": ind.get("status")}
+            for ind in indications[:15] if ind.get("name")
+        ],
+        "top_adverse_events": [
+            {"event": ae.get("name"), "count": ae.get("count")}
+            for ae in adverse[:10] if ae.get("name")
+        ],
+        "data_source": "Open Targets Platform (EMBL-EBI)",
+        "api_url": "https://platform.opentargets.org",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 15. DailyMed — Alternative Drug Label Source (NIH/NLM)
+# ═════════════════════════════════════════════════════════════
+
+_DM_BASE = "https://dailymed.nlm.nih.gov/dailymed/services/v2"
+
+
+def get_dailymed_label(drug_name: str) -> dict:
+    """
+    Get drug label information from DailyMed (NIH/NLM).
+
+    Alternative to openFDA Drug Labeling API. DailyMed contains
+    FDA Structured Product Labels (SPLs). Better OTC coverage.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    search = _escape(drug_name.upper())
+    url = f"{_DM_BASE}/spls.json?drug_name={search}&pagesize=1"
+
+    _rate_limited()
+    data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
+    if _is_error(data):
+        return data
+
+    if not isinstance(data, dict) or not data.get("data"):
+        return {"status": "ok", "drug_name": drug_name, "found": False,
+                "message": f"No DailyMed label found for '{drug_name}'"}
+
+    spl_entry = data["data"][0]
+    setid = spl_entry.get("setid")
+    title = spl_entry.get("title", "")
+    version = spl_entry.get("spl_version")
+    pub_date = spl_entry.get("published_date")
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "found": True,
+        "title": title,
+        "setid": setid,
+        "spl_version": version,
+        "published_date": pub_date,
+        "url": f"https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid={setid}",
+        "data_source": "DailyMed (NIH/NLM)",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
