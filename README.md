@@ -27,7 +27,7 @@ pip install drug-pipeline-mcp[http]
 drug-pipeline --http --port 8081
 ```
 
-## Tools (17)
+## Tools (28)
 
 | Tool | What it does | Data Source |
 |------|-------------|-------------|
@@ -53,7 +53,7 @@ drug-pipeline --http --port 8081
 | `compare_drugs` | **Head-to-head comparison** — FDA, EU, MOA, safety, patent across 2 drugs | Composite (all) |
 | `pipeline_landscape` | **Full pipeline for a condition** — approved drugs + Phase 3/2/1 + mechanisms + sponsors + pubs | Composite (all) |
 | `get_us_orphan_designations` | **US FDA Orphan Drug Designations** — indication, status, dates, exclusivity | MyChem.info |
-| `get_drug_pricing` | **US drug pricing** — NADAC pharmacy-level acquisition costs | NADAC/CMS |
+| `get_drug_pricing` | **US drug product ID** — NDC codes, manufacturers, strength, dosage form | openFDA NDC Directory |
 | `list_biosimilars` | **EU biosimilars from EMA** — filter by condition/therapeutic area | EMA Daily XLSX |
 | `list_loss_of_exclusivity` | **LOE timing** — biosimilar competition by active substance | EMA + FDA |
 | `get_trial_sites` | **Trial site locations** — facilities, countries, geo distribution, contacts | ClinicalTrials.gov |
@@ -128,7 +128,7 @@ Beyond drug-level approvals, this project also provides **multi-jurisdiction reg
 drug-pipeline-mcp/
 ├── drug_pipeline/
 │   ├── __init__.py        # Version
-│   ├── server.py          # MCP server (17 tools)
+│   ├── server.py          # MCP server (28 tools)
 │   └── sources.py         # Data source fetchers
 ├── drug_pipeline_cli.py   # CLI entry point
 ├── pyproject.toml
@@ -141,12 +141,17 @@ No machine learning. No predictions. Only structured synthesis of verified prima
 
 | Source | Data | Free |
 |--------|------|------|
-| ClinicalTrials.gov | 500K+ studies, phases, status, eligibility, **results** | ✅ Always free |
-| openFDA Drug Approvals | FDA approvals, NDC directory, submissions | ✅ Always free |
+| ClinicalTrials.gov | 500K+ studies, phases, status, eligibility, **results**, site locations | ✅ Always free |
+| openFDA NDC Directory | Drug product ID, NDC codes, manufacturers | ✅ Always free |
 | openFDA FAERS | Adverse event reports, reactions, outcomes | ✅ Always free |
+| openFDA Drug Labeling | Prescribing info, interactions, contraindications | ✅ Always free |
+| openFDA Approvals/Enforcement | FDA submission history, recalls | ✅ Always free |
 | RxNorm / RxNav | Drug identifiers, ATC classification | ✅ Always free |
 | PubMed / NCBI | Scientific publications | ✅ Always free |
-| EMA Medicines Register | EU authorization status, ATC, orphan/biosimilar flags, **therapeutic areas** | ✅ Always free |
+| EMA Medicines Register | EU authorization, ATC, orphan/biosimilar flags, therapeutic areas | ✅ Always free |
+| **MyChem.info** | **US FDA Orphan Drug Designations** | ✅ Always free |
+| **Open Targets (EMBL-EBI)** | **Drug-target mechanisms of action, clinical stage** | ✅ Always free |
+| **DailyMed (NIH/NLM)** | **Drug labels (OTC + Rx), SPL set ID** | ✅ Always free |
 
 ## Anti-Hallucination
 
