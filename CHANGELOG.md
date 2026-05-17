@@ -1,5 +1,19 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-17 (v0.5.4)
+
+#### Fixed
+- **🐛 Composite `drug_pipeline` — `drug_label` immer `null`** (#18)
+  - Ursache: Der Composite prüfte auf `label_data.get("sections")`, aber `get_drug_label()` liefert Felder (`indications_and_usage`, `boxed_warning`) **direkt** im Dict, nicht unter `sections`.
+  - Fix: Bedingung auf `label_data.get("found") is True` geändert, Felder werden direkt gelesen.
+- **🟡 PRR-Signalerkennung — Brand-Aliasing fehlte** (#19)
+  - Ursache: `detect_safety_signals("semaglutide")` fand nur 6.618 FAERS-Reports (Generic-Name), `detect_safety_signals("Ozempic")` fand 57.104.
+  - Fix: Neue Hilfsfunktion `_resolve_faers_brand(drug_name, safety_data)` — wenn <10k Reports, sucht sie Markennamen via openFDA und wählt den mit den meisten FAERS-Reports.
+  - Ergebnis: `detect_safety_signals("semaglutide")` → auto-resolved zu "OZEMPIC" → **5 Signale** ✅
+
+#### Documentation
+- **OTC-Label-API-Limit dokumentiert** — `get_drug_label` und `get_drug_interactions` haben jetzt Docstring-Hinweis: openFDA Labeling API deckt nur Rx-Medikamente ab, OTC-Monograph-Drogen (z.B. Ibuprofen) liefern leere Label-Daten.
+
 ## 2026-05-13 (v0.6.0)
 
 #### Added (Regulatory Intelligence)

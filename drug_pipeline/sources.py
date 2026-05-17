@@ -1013,11 +1013,11 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
     drug_label = None
     if drug_name:
         label_data = get_drug_label(drug_name)
-        if label_data.get("status") == "ok" and label_data.get("sections"):
+        if label_data.get("status") == "ok" and label_data.get("found") is True:
             drug_label = {
-                "indications_and_usage": label_data["sections"].get("indications_and_usage", "")[:500],
-                "boxed_warning": (label_data["sections"].get("boxed_warning", "") or "")[:300],
-                "contraindications": (label_data["sections"].get("contraindications", "") or "")[:300],
+                "indications_and_usage": (label_data.get("indications_and_usage") or "")[:500],
+                "boxed_warning": (label_data.get("boxed_warning") or "")[:300],
+                "contraindications": (label_data.get("contraindications") or "")[:300],
             }
             sources_used.append("openFDA Labeling")
 
@@ -1441,6 +1441,11 @@ def get_drug_label(drug_name: str) -> dict:
     Returns structured label sections: indications_and_usage, boxed_warning,
     dosage_and_administration, contraindications, adverse_reactions,
     warnings_and_cautions, drug_interactions, pregnancy_and_lactation.
+
+    NOTE: The openFDA Drug Labeling API primarily covers prescription (Rx) drugs
+    with FDA-approved NDAs/BLAs. OTC monograph drugs (e.g., generic ibuprofen)
+    typically return 'found: False' because they are not individually labeled
+    under an FDA application. Use brand-name OTC products for best results.
     """
     if not drug_name or len(drug_name) < 2:
         return {"status": "error", "error_code": "INVALID_INPUT",
@@ -1554,6 +1559,49 @@ def get_recalls(drug_name: str) -> dict:
 # ═════════════════════════════════════════════════════════════
 
 
+def _resolve_faers_brand(drug_name: str, safety_data: dict) -> tuple[str, dict]:
+    """Resolve brand name aliasing for FAERS queries.
+    
+    If the initial drug name yields fewer than 10,000 FAERS reports,
+    try to find brand names (via openFDA) that may have more reports
+    filed under them. Returns (best_name, safety_data)."""
+    best_name = drug_name
+    best_safety = safety_data
+    best_reports = safety_data.get("total_reports", 0)
+    
+    # Only bother if reports are low — suggests generic name with poor FAERS coverage
+    if best_reports >= 10000:
+        return best_name, best_safety
+    
+    # Try to find brand name aliases via FDA approvals data
+    try:
+        import urllib.parse as _up
+        search_term = _up.quote(drug_name)
+        url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=3"
+        data = _cached_fetch(url, ttl=600)
+        if not _is_error(data) and isinstance(data, dict):
+            brands_seen = set()
+            for r in (data.get("results", []) or []):
+                for p in (r.get("products", []) or []):
+                    bn = p.get("brand_name", "")
+                    if bn and bn.lower() not in brands_seen and bn.lower() != drug_name.lower():
+                        brands_seen.add(bn.lower())
+                        _rate_limited()
+                        brand_url = f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{_up.quote(bn)}&limit=1"
+                        bdata = _fetch(brand_url)
+                        if not _is_error(bdata) and isinstance(bdata, dict):
+                            total = (bdata.get("meta", {}).get("results", {}) or {}).get("total", 0) or 0
+                            if total > best_reports:
+                                best_reports = total
+                                best_name = bn
+                                # Re-fetch full safety data for the best brand
+                                best_safety = get_safety_data(bn)
+    except Exception:
+        pass  # If brand resolution fails, fall back to original name
+    
+    return best_name, best_safety
+
+
 def detect_safety_signals(drug_name: str) -> dict:
     """
     Compute Proportional Reporting Ratio (PRR) safety signals from FAERS data.
@@ -1577,6 +1625,9 @@ def detect_safety_signals(drug_name: str) -> dict:
     safety = get_safety_data(drug_name)
     if _is_error(safety):
         return safety
+
+    # Step 1b: Brand alias resolution — try brand names if reports are low
+    drug_name, safety = _resolve_faers_brand(drug_name, safety)
 
     total_drug_reports = safety.get("total_reports", 0)
     top_reactions = safety.get("top_reactions", []) or []
@@ -1871,6 +1922,11 @@ def get_drug_interactions(drug_name: str) -> dict:
     Returns the drug interactions section from the label, plus
     contraindicated and interacting drug classes. Uses openFDA
     Drug Labeling and RxNorm APIs.
+
+    NOTE: The openFDA Drug Labeling API primarily covers prescription (Rx) drugs.
+    OTC monograph drugs (e.g., generic ibuprofen) will return null for
+    label_interactions fields (drug_interactions_text, contraindications_text).
+    The FAERS co-reported drugs analysis still works for OTC drugs.
     """
     if not drug_name or len(drug_name) < 2:
         return {"status": "error", "error_code": "INVALID_INPUT",
