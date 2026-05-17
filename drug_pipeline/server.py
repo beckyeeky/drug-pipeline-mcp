@@ -15,6 +15,22 @@ Tools:
   company_pipeline     — Company R&D pipeline by phase
   search_publications  — PubMed publications for a drug/trial
   drug_pipeline        -- **Composite**: drug info + FDA + EU + safety + trials + pubs
+  get_drug_label       — FDA drug label (prescribing information)
+  get_recalls          — FDA recall/enforcement history
+  detect_safety_signals — PRR-based pharmacovigilance signal detection
+  get_patent_expiry    — FDA patent & exclusivity information
+  get_drug_interactions — Drug-drug interactions (FDA label + FAERS)
+  get_opentargets_drug — Drug-target MOA from Open Targets (EMBL-EBI)
+  get_dailymed_label   — Drug label from DailyMed (NIH, OTC-friendly)
+  compare_drugs        — **Head-to-head drug comparison** (synthetic)
+  pipeline_landscape   — **Complete pipeline landscape for a condition**
+  get_us_orphan_designations — US FDA Orphan Drug Designations
+  get_drug_pricing     — US drug pricing (NADAC/CMS)
+  list_biosimilars     — EU biosimilars from EMA register
+  list_loss_of_exclusivity — LOE timing & biosimilar competition
+  get_trial_sites      — Clinical trial site locations & geographic distribution
+  detect_combination_therapies — Co-administered drug detection
+  find_investigators   — Principal investigator / KOL search
 """
 from __future__ import annotations
 
@@ -51,6 +67,15 @@ from .sources import (
     get_drug_interactions as _get_drug_interactions,
     get_opentargets_drug as _get_opentargets_drug,
     get_dailymed_label as _get_dailymed_label,
+    compare_drugs as _compare_drugs,
+    pipeline_landscape as _pipeline_landscape,
+    get_us_orphan_designations as _get_us_orphan_designations,
+    get_drug_pricing as _get_drug_pricing,
+    list_biosimilars as _list_biosimilars,
+    list_loss_of_exclusivity as _list_loss_of_exclusivity,
+    get_trial_sites as _get_trial_sites,
+    detect_combination_therapies as _detect_combination_therapies,
+    find_investigators as _find_investigators,
     drug_pipeline_summary,
     VALID_PHASES,
     VALID_STATUSES,
@@ -214,6 +239,43 @@ class DrugNameInput(BaseModel):
     )
 
 
+class CompareDrugsInput(BaseModel):
+    """Head-to-head comparison of two drugs."""
+    drug_a: str = Field(..., min_length=2, description="First drug name (brand or generic)")
+    drug_b: str = Field(..., min_length=2, description="Second drug name (brand or generic)")
+
+
+class PipelineLandscapeInput(BaseModel):
+    """Complete pipeline landscape for a medical condition."""
+    condition: str = Field(..., min_length=3, description="Medical condition (e.g., 'non-small cell lung cancer', 'COPD', 'type 2 diabetes')")
+    limit: int = Field(default=20, ge=5, le=50, description="Maximum results per phase (5-50, default 20)")
+
+
+class ListBiosimilarsInput(BaseModel):
+    """List EU-approved biosimilars, optionally by condition."""
+    condition: str | None = Field(default=None, description="Optional medical condition / therapeutic area filter")
+    limit: int = Field(default=50, ge=5, le=200, description="Maximum results (5-200, default 50)")
+
+
+class LossOfExclusivityInput(BaseModel):
+    """Identify drugs approaching Loss of Exclusivity."""
+    limit: int = Field(default=30, ge=5, le=100, description="Maximum results (5-100, default 30)")
+
+
+class DetectCombinationTherapiesInput(BaseModel):
+    """Detect combination therapies involving a drug."""
+    drug_name: str = Field(..., min_length=2, description="Drug name to analyze for combinations")
+    condition: str | None = Field(default=None, description="Optional medical condition filter")
+    limit: int = Field(default=15, ge=5, le=30, description="Maximum trials to analyze (5-30)")
+
+
+class FindInvestigatorsInput(BaseModel):
+    """Find principal investigators / KOLs by condition or drug."""
+    condition: str | None = Field(default=None, description="Medical condition to search for investigators")
+    drug_name: str | None = Field(default=None, description="Drug name to find investigators for")
+    limit: int = Field(default=20, ge=5, le=50, description="Maximum investigators to return (5-50)")
+
+
 # ─────────────────────────────────────────────────────────────
 # Tool Metadata & Dispatch
 # ─────────────────────────────────────────────────────────────
@@ -354,6 +416,71 @@ def _handle_get_opentargets_drug(**kwargs: Any) -> list[types.TextContent]:
 def _handle_get_dailymed_label(**kwargs: Any) -> list[types.TextContent]:
     validated = DrugNameInput(**kwargs)
     result = _get_dailymed_label(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_compare_drugs(**kwargs: Any) -> list[types.TextContent]:
+    validated = CompareDrugsInput(**kwargs)
+    result = _compare_drugs(validated.drug_a.strip(), validated.drug_b.strip())
+    return _response(result)
+
+
+def _handle_pipeline_landscape(**kwargs: Any) -> list[types.TextContent]:
+    validated = PipelineLandscapeInput(**kwargs)
+    result = _pipeline_landscape(validated.condition.strip(), limit=validated.limit)
+    return _response(result)
+
+
+def _handle_get_us_orphan_designations(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_us_orphan_designations(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_get_drug_pricing(**kwargs: Any) -> list[types.TextContent]:
+    validated = DrugNameInput(**kwargs)
+    result = _get_drug_pricing(validated.drug_name.strip())
+    return _response(result)
+
+
+def _handle_list_biosimilars(**kwargs: Any) -> list[types.TextContent]:
+    validated = ListBiosimilarsInput(**kwargs)
+    result = _list_biosimilars(
+        condition=validated.condition.strip() if validated.condition else None,
+        limit=validated.limit,
+    )
+    return _response(result)
+
+
+def _handle_list_loss_of_exclusivity(**kwargs: Any) -> list[types.TextContent]:
+    validated = LossOfExclusivityInput(**kwargs)
+    result = _list_loss_of_exclusivity(limit=validated.limit)
+    return _response(result)
+
+
+def _handle_get_trial_sites(**kwargs: Any) -> list[types.TextContent]:
+    validated = GetTrialDetailInput(**kwargs)
+    result = _get_trial_sites(validated.nct_id.strip().upper())
+    return _response(result)
+
+
+def _handle_detect_combination_therapies(**kwargs: Any) -> list[types.TextContent]:
+    validated = DetectCombinationTherapiesInput(**kwargs)
+    result = _detect_combination_therapies(
+        validated.drug_name.strip(),
+        condition=validated.condition.strip() if validated.condition else None,
+        limit=validated.limit,
+    )
+    return _response(result)
+
+
+def _handle_find_investigators(**kwargs: Any) -> list[types.TextContent]:
+    validated = FindInvestigatorsInput(**kwargs)
+    result = _find_investigators(
+        condition=validated.condition.strip() if validated.condition else None,
+        drug_name=validated.drug_name.strip() if validated.drug_name else None,
+        limit=validated.limit,
+    )
     return _response(result)
 
 
@@ -598,6 +725,108 @@ TOOLS = {
         "input_schema": DrugNameInput.model_json_schema(),
         "handler": _handle_get_dailymed_label,
     },
+    "compare_drugs": {
+        "description": (
+            "**Head-to-head drug comparison** — Compares two drugs across FDA approvals, "
+            "EU/EMA status, mechanisms of action, safety (FAERS total reports), drug type, "
+            "and patent/exclusivity. Uses all available data sources internally. "
+            "Use this to answer: 'Which drug is more effective?' or "
+            "'How does Drug A compare to Drug B in safety and development stage?'"
+        ),
+        "input_schema": CompareDrugsInput.model_json_schema(),
+        "handler": _handle_compare_drugs,
+    },
+    "pipeline_landscape": {
+        "description": (
+            "**Complete pipeline landscape for a medical condition** — Returns a structured "
+            "view of approved drugs (EMA), Phase 3 active trials, Phase 2 trials, Phase 1 "
+            "trials, key mechanisms and targets, key sponsor/companies, and recent pipeline "
+            "publications. Use this instead of calling search_trials + approved_for_condition "
+            "+ search_publications separately. "
+            "Use this to answer: 'Give me the full pipeline for [disease]'"
+        ),
+        "input_schema": PipelineLandscapeInput.model_json_schema(),
+        "handler": _handle_pipeline_landscape,
+    },
+    "get_us_orphan_designations": {
+        "description": (
+            "Get US FDA Orphan Drug Designation data from MyChem.info (aggregated from "
+            "the FDA Orphan Drug Product Designation database). Returns designation "
+            "history including indication, designation status, dates, and exclusivity "
+            "end dates. Use this to complement list_orphan_drugs (EU-only). "
+            "Use this to answer: 'Does this drug have US orphan designation?'"
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_us_orphan_designations,
+    },
+    "get_drug_pricing": {
+        "description": (
+            "Get US drug pricing data from the NADAC (National Average Drug Acquisition "
+            "Cost) database by CMS/Medicaid. Returns pharmacy-level acquisition prices, "
+            "NDC, effective date, and pricing unit. Updated weekly. "
+            "Note: Covers outpatient prescription drugs; limited for biologics and hospital-only drugs. "
+            "Use this to answer: 'How much does this drug cost in the US?'"
+        ),
+        "input_schema": DrugNameInput.model_json_schema(),
+        "handler": _handle_get_drug_pricing,
+    },
+    "list_biosimilars": {
+        "description": (
+            "List all EU-approved biosimilars from the EMA Human Medicines Register. "
+            "Optionally filter by medical condition or therapeutic area. "
+            "Returns drug names, active substances, ATC codes, and groups by active "
+            "substance for competitive landscape analysis. "
+            "Use this to answer: 'What biosimilars are approved in the EU?'"
+        ),
+        "input_schema": ListBiosimilarsInput.model_json_schema(),
+        "handler": _handle_list_biosimilars,
+    },
+    "list_loss_of_exclusivity": {
+        "description": (
+            "Identify drugs approaching or at Loss of Exclusivity (LOE) based on "
+            "EU biosimilar competition. Combines EMA biosimilar data to detect active "
+            "substances with multiple biosimilar entrants, indicating post-LOE markets. "
+            "For precise patent dates, combine with get_patent_expiry. "
+            "Use this to answer: 'Which drugs are facing biosimilar competition?'"
+        ),
+        "input_schema": LossOfExclusivityInput.model_json_schema(),
+        "handler": _handle_list_loss_of_exclusivity,
+    },
+    "get_trial_sites": {
+        "description": (
+            "Get clinical trial site locations and geographic intelligence for a specific "
+            "trial by NCT ID. Returns facility names, cities, states, countries, "
+            "recruitment status, contact information, and geographic distribution. "
+            "Use this after get_trial_detail to understand where a trial is being conducted. "
+            "Use this to answer: 'Where is this clinical trial being conducted?'"
+        ),
+        "input_schema": GetTrialDetailInput.model_json_schema(),
+        "handler": _handle_get_trial_sites,
+    },
+    "detect_combination_therapies": {
+        "description": (
+            "Detect combination therapies and co-administered drugs involving a specific "
+            "drug. Searches ClinicalTrials.gov for trials where the drug is an intervention, "
+            "then extracts all co-interventions. Returns the most frequently co-administered "
+            "drugs and detailed trial-level breakdowns. Especially useful for oncology "
+            "combination analysis and competitive positioning. "
+            "Use this to answer: 'What drugs are combined with Drug X in clinical trials?'"
+        ),
+        "input_schema": DetectCombinationTherapiesInput.model_json_schema(),
+        "handler": _handle_detect_combination_therapies,
+    },
+    "find_investigators": {
+        "description": (
+            "Find principal investigators and Key Opinion Leaders (KOLs) by medical "
+            "condition or drug name. Searches active ClinicalTrials.gov trials and "
+            "extracts investigator names, roles, affiliations, and contact details. "
+            "Also searches PubMed for recent publications by KOLs in the field. "
+            "Use this for competitive intelligence, trial design, and KOL mapping. "
+            "Use this to answer: 'Who are the key investigators in [disease] research?'"
+        ),
+        "input_schema": FindInvestigatorsInput.model_json_schema(),
+        "handler": _handle_find_investigators,
+    },
 }
 
 
@@ -707,7 +936,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
         return JSONResponse({
             "server": "drug-pipeline",
             "version": __version__,
-            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, and company pipelines. 17 tools, 6 data sources.",
+            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, pricing, site intelligence, and company pipelines. 28 tools, 8 data sources.",
             "tools": list(TOOLS.keys()),
             "docs": "https://github.com/DasClown/drug-pipeline-mcp",
             "endpoints": {
@@ -747,6 +976,10 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
                 {"name": "RxNorm", "type": "rx", "url": "https://rxnav.nlm.nih.gov/"},
                 {"name": "PubMed", "type": "research", "url": "https://pubmed.ncbi.nlm.nih.gov/"},
                 {"name": "FAERS", "type": "safety", "url": "https://www.fda.gov/drugs/drug-approvals-and-databases/fda-adverse-event-reporting-system-faers"},
+                {"name": "MyChem.info", "type": "orphan-drugs", "url": "https://mychem.info/"},
+                {"name": "NADAC/CMS", "type": "pricing", "url": "https://data.medicaid.gov/"},
+                {"name": "Open Targets", "type": "targets", "url": "https://platform.opentargets.org/"},
+                {"name": "DailyMed (NIH/NLM)", "type": "labels", "url": "https://dailymed.nlm.nih.gov/"},
             ],
             "tools": tools_list,
             "resources": [

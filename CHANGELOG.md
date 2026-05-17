@@ -1,5 +1,31 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-17 (v0.7.0)
+
+#### Added — 9 Neue Tools (28 total, +47%) 💊🚀
+
+- **`compare_drugs`** — **Head-to-Head Drug Comparison** (synthetisch, keine neue API). Vergleicht zwei Wirkstoffe über 6 Dimensionen: FDA-Status, EU/EMA, MOA, Safety (FAERS), Drug Type, Patent/Exclusivity.
+- **`pipeline_landscape`** — **Komplette Pipeline für eine Indikation**. Liefert strukturiert: zugelassene Drugs (EMA), Phase 3/2/1 Trials, Key Sponsors, Mechanismen, PubMed Reviews. Ersetzt 3+ separate Tool-Calls.
+- **`get_us_orphan_designations`** — **US FDA Orphan Drug Designations** via MyChem.info (neue Datenquelle). Schließt die Lücke zu list_orphan_drugs (EU-only). Enthält Designation-Status, Daten, Exclusivity-End.
+- **`get_drug_pricing`** — **US Drug Pricing** via NADAC (CMS/Medicaid). Pharmacy-Level Acquisition Costs, wöchentlich aktualisiert. Enthält NDC, Preis/Unit, Effective Date.
+- **`list_biosimilars`** — **EU Biosimilars** aus EMA Register (eigene Filterung). Optionale Condition-Filterung. Gruppiert nach Active Substance.
+- **`list_loss_of_exclusivity`** — **LOE Timing**. Identifiziert Wirkstoffe mit Biosimilar-Wettbewerb (3+ = LOE Active, 1-2 = Early Biosimilar Entry).
+- **`get_trial_sites`** — **Clinical Trial Site Intelligence**. Facility-Namen, Länder, Städte, Rekrutierungs-Status, Geo-Verteilung, Kontaktdaten.
+- **`detect_combination_therapies`** — **Kombinationstherapie-Detektion**. Findet Co-Interventions aus Trials, rankt Top-Co-Administered Drugs.
+- **`find_investigators`** — **KOL / PI Search**. Extrahiert Principal Investigators aus ClinicalTrials.gov + PubMed Publications.
+
+#### New Data Sources
+- MyChem.info (US FDA Orphan Drug Designations) 🆕
+- NADAC/CMS (Drug Pricing via data.medicaid.gov) 🆕
+- Open Targets (EMBL-EBI — bereits vorhanden, jetzt in server_card gelistet)
+- DailyMed (NIH/NLM — bereits vorhanden, jetzt in server_card gelistet)
+
+#### Infrastructure
+- **10 neue Input-Models**: CompareDrugsInput, PipelineLandscapeInput, ListBiosimilarsInput, LossOfExclusivityInput, DetectCombinationTherapiesInput, FindInvestigatorsInput
+- **25 neue Tests** (47 total, +113%)
+- Version bumped to v0.7.0 (from v0.5.4 → v0.6.0 war pyproject.toml-only)
+- 10 data sources jetzt im HTTP Server Card gelistet
+
 ## 2026-05-17 (v0.5.4)
 
 #### Fixed

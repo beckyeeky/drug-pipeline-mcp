@@ -151,3 +151,234 @@ class TestValidStatuses:
 
     def test_no_duplicates(self):
         assert len(VALID_STATUSES) == len(set(VALID_STATUSES))
+
+
+# ═════════════════════════════════════════════════════════════
+# NEW v0.7.0 Tools — Input Validation (no API calls)
+# ═════════════════════════════════════════════════════════════
+
+
+class TestCompareDrugs:
+    """compare_drugs input validation."""
+
+    def test_invalid_empty(self):
+        from drug_pipeline.sources import compare_drugs
+        result = compare_drugs("", "DrugB")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_short(self):
+        from drug_pipeline.sources import compare_drugs
+        result = compare_drugs("A", "B")
+        assert result["status"] == "error"
+
+    def test_valid_calls_ok_schema(self):
+        """Happy path returns correct schema (may fail API but schema is right)."""
+        from drug_pipeline.sources import compare_drugs
+        result = compare_drugs("aspirin", "ibuprofen")
+        if result.get("status") == "ok":
+            assert "drug_a" in result
+            assert "drug_b" in result
+            assert "comparison" in result
+            assert len(result["comparison"]) > 0
+            fields = [c["field"] for c in result["comparison"]]
+            assert "FDA Approval Status" in fields
+            assert "EU/EMA Status" in fields
+            assert "Mechanism of Action" in fields
+
+
+class TestPipelineLandscape:
+    """pipeline_landscape input validation."""
+
+    def test_invalid_short_condition(self):
+        from drug_pipeline.sources import pipeline_landscape
+        result = pipeline_landscape("AB")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_empty_condition(self):
+        from drug_pipeline.sources import pipeline_landscape
+        result = pipeline_landscape("")
+        assert result["status"] == "error"
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import pipeline_landscape
+        result = pipeline_landscape("type 2 diabetes", limit=5)
+        if result.get("status") == "ok":
+            assert "condition" in result
+            assert "landscape" in result
+            l = result["landscape"]
+            assert "approved_drugs" in l
+            assert "phase_3_trials" in l
+            assert "phase_2_trials" in l
+            assert "key_mechanisms" in l
+            assert "data_sources" in result
+
+
+class TestUsOrphanDesignations:
+    """get_us_orphan_designations input validation."""
+
+    def test_invalid_empty(self):
+        from drug_pipeline.sources import get_us_orphan_designations
+        result = get_us_orphan_designations("")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_short(self):
+        from drug_pipeline.sources import get_us_orphan_designations
+        result = get_us_orphan_designations("X")
+        assert result["status"] == "error"
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import get_us_orphan_designations
+        result = get_us_orphan_designations("vigabatrin")
+        if result.get("status") == "ok":
+            if result.get("found"):
+                assert "orphan_designations" in result
+                assert "designation_count" in result
+                od = result["orphan_designations"][0]
+                assert "orphan_designation" in od
+                assert "designation_status" in od
+                assert "designated_date" in od
+
+
+class TestDrugPricing:
+    """get_drug_pricing input validation."""
+
+    def test_invalid_empty(self):
+        from drug_pipeline.sources import get_drug_pricing
+        result = get_drug_pricing("")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_short(self):
+        from drug_pipeline.sources import get_drug_pricing
+        result = get_drug_pricing("A")
+        assert result["status"] == "error"
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import get_drug_pricing
+        result = get_drug_pricing("atorvastatin")
+        if result.get("status") == "ok" and result.get("found"):
+            assert "nadac_entries" in result
+            assert "most_recent_entry" in result
+            e = result["nadac_entries"][0]
+            assert "nadac_per_unit" in e
+            assert "ndc" in e
+            assert "effective_date" in e
+
+
+class TestListBiosimilars:
+    """list_biosimilars input validation + schema."""
+
+    def test_all_biosimilars(self):
+        from drug_pipeline.sources import list_biosimilars
+        result = list_biosimilars(limit=5)
+        if result.get("status") == "ok":
+            assert "drugs" in result
+            assert "biosimilars_by_substance" in result
+            assert "total_eu_biosimilars" in result
+
+    def test_filter_by_condition(self):
+        from drug_pipeline.sources import list_biosimilars
+        result = list_biosimilars(condition="arthritis", limit=10)
+        if result.get("status") == "ok":
+            assert "condition_filter" in result
+            assert result["condition_filter"] == "arthritis"
+
+    def test_biosimilar_entry_schema(self):
+        from drug_pipeline.sources import list_biosimilars
+        result = list_biosimilars(limit=5)
+        if result.get("status") == "ok" and result["drugs"]:
+            d = result["drugs"][0]
+            assert "name" in d
+            assert "active_substance" in d
+            assert "atc_code" in d
+
+
+class TestLossOfExclusivity:
+    """list_loss_of_exclusivity schema."""
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import list_loss_of_exclusivity
+        result = list_loss_of_exclusivity(limit=5)
+        if result.get("status") == "ok":
+            assert "loss_of_exclusivity_entries" in result
+            assert "total_loe_active_substances" in result
+            assert "total_eu_biosimilars" in result
+
+
+class TestTrialSites:
+    """get_trial_sites input validation."""
+
+    def test_invalid_nct_empty(self):
+        from drug_pipeline.sources import get_trial_sites
+        result = get_trial_sites("")
+        assert result["status"] == "error"
+        assert "INVALID" in result.get("error_code", "")
+
+    def test_invalid_nct_wrong_prefix(self):
+        from drug_pipeline.sources import get_trial_sites
+        result = get_trial_sites("XYZ123456")
+        assert result["status"] == "error"
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import get_trial_sites
+        result = get_trial_sites("NCT03178617")
+        if result.get("status") == "ok":
+            assert "site_count" in result
+            assert "country_count" in result
+            assert "geographic_distribution" in result
+            assert "sites" in result
+            assert "trial_status" in result
+
+
+class TestCombinationTherapies:
+    """detect_combination_therapies input validation."""
+
+    def test_invalid_empty(self):
+        from drug_pipeline.sources import detect_combination_therapies
+        result = detect_combination_therapies("")
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_invalid_short(self):
+        from drug_pipeline.sources import detect_combination_therapies
+        result = detect_combination_therapies("A")
+        assert result["status"] == "error"
+
+    def test_valid_schema(self):
+        from drug_pipeline.sources import detect_combination_therapies
+        result = detect_combination_therapies("pembrolizumab", limit=5)
+        if result.get("status") == "ok" and result.get("found"):
+            assert "top_co_administered" in result
+            assert "combinations" in result
+            assert "trials_with_combinations" in result
+
+
+class TestFindInvestigators:
+    """find_investigators input validation."""
+
+    def test_invalid_no_args(self):
+        from drug_pipeline.sources import find_investigators
+        result = find_investigators()
+        assert result["status"] == "error"
+        assert result["error_code"] == "INVALID_INPUT"
+
+    def test_valid_by_condition(self):
+        from drug_pipeline.sources import find_investigators
+        result = find_investigators(condition="lung cancer", limit=5)
+        if result.get("status") == "ok":
+            if result.get("found"):
+                assert "investigators" in result
+                inv = result["investigators"][0]
+                assert "name" in inv
+                assert "role" in inv
+                assert "trial_nct" in inv
+
+    def test_valid_by_drug(self):
+        from drug_pipeline.sources import find_investigators
+        result = find_investigators(drug_name="pembrolizumab", limit=5)
+        if result.get("status") == "ok":
+            # May be found or not — schema should be valid either way
+            assert "total_investigators" in result

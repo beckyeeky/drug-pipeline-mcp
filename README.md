@@ -48,6 +48,17 @@ drug-pipeline --http --port 8081
 | `get_patent_expiry` | **Patent & exclusivity info** — approval dates, market exclusivity estimates | openFDA |
 | `get_drug_interactions` | **Drug-drug interactions** — FDA label interactions + FAERS co-reported drugs | openFDA Labeling + FAERS |
 | `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + interactions + trials + pubs + patent | All sources |
+| `get_opentargets_drug` | **Drug-target MOA** — mechanisms of action, targets, clinical stage, drug type | Open Targets (EMBL-EBI) |
+| `get_dailymed_label` | **OTC-friendly drug label** — SPL set ID, version, DailyMed URL | DailyMed (NIH/NLM) |
+| `compare_drugs` | **Head-to-head comparison** — FDA, EU, MOA, safety, patent across 2 drugs | Composite (all) |
+| `pipeline_landscape` | **Full pipeline for a condition** — approved drugs + Phase 3/2/1 + mechanisms + sponsors + pubs | Composite (all) |
+| `get_us_orphan_designations` | **US FDA Orphan Drug Designations** — indication, status, dates, exclusivity | MyChem.info |
+| `get_drug_pricing` | **US drug pricing** — NADAC pharmacy-level acquisition costs | NADAC/CMS |
+| `list_biosimilars` | **EU biosimilars from EMA** — filter by condition/therapeutic area | EMA Daily XLSX |
+| `list_loss_of_exclusivity` | **LOE timing** — biosimilar competition by active substance | EMA + FDA |
+| `get_trial_sites` | **Trial site locations** — facilities, countries, geo distribution, contacts | ClinicalTrials.gov |
+| `detect_combination_therapies` | **Co-administered drugs** — combination therapy detection from trials | ClinicalTrials.gov |
+| `find_investigators` | **KOL / PI search** — investigators by condition or drug | ClinicalTrials.gov + PubMed |
 
 ## Regulatory Intelligence
 

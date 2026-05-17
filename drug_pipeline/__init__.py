@@ -1,2 +1,2 @@
-"""Drug Pipeline MCP v0.5.4"""
-__version__ = "0.5.4"
+"""Drug Pipeline MCP v0.7.0 — 28 Tools, 10 Data Sources"""
+__version__ = "0.7.0"

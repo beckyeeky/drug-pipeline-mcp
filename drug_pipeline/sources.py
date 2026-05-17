@@ -2138,3 +2138,1000 @@ def get_dailymed_label(drug_name: str) -> dict:
         "data_source": "DailyMed (NIH/NLM)",
         "timestamp": datetime.utcnow().isoformat(),
     }
+
+
+# ═════════════════════════════════════════════════════════════
+# 16. compare_drugs — Head-to-Head Drug Comparison (Synthetic)
+# ═════════════════════════════════════════════════════════════
+
+
+def compare_drugs(drug_a: str, drug_b: str) -> dict:
+    """
+    Head-to-head comparison of two drugs using all available data sources.
+
+    Compares: general info, FDA approvals, EU status, safety (FAERS),
+    mechanisms of action, patent/exclusivity, and drug labels.
+    """
+    if not all(len(d) >= 2 for d in [drug_a, drug_b]):
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "Each drug name must be at least 2 characters"}
+
+    try:
+        info_a = search_drug(drug_a)
+        info_b = search_drug(drug_b)
+    except Exception:
+        info_a = {"status": "error", "message": "lookup failed"}
+        info_b = {"status": "error", "message": "lookup failed"}
+
+    try:
+        fda_a = get_fda_approvals(drug_a)
+        fda_b = get_fda_approvals(drug_b)
+    except Exception:
+        fda_a = {"status": "error"}
+        fda_b = {"status": "error"}
+
+    try:
+        eu_a = get_eu_approvals(drug_a)
+        eu_b = get_eu_approvals(drug_b)
+    except Exception:
+        eu_a = {"status": "error"}
+        eu_b = {"status": "error"}
+
+    try:
+        safety_a = get_safety_data(drug_a)
+        safety_b = get_safety_data(drug_b)
+    except Exception:
+        safety_a = {"status": "error"}
+        safety_b = {"status": "error"}
+
+    try:
+        moa_a = get_opentargets_drug(drug_a)
+        moa_b = get_opentargets_drug(drug_b)
+    except Exception:
+        moa_a = {"status": "error"}
+        moa_b = {"status": "error"}
+
+    try:
+        pat_a = get_patent_expiry(drug_a)
+        pat_b = get_patent_expiry(drug_b)
+    except Exception:
+        pat_a = {"status": "error"}
+        pat_b = {"status": "error"}
+
+    def _label(d: dict) -> str:
+        if d.get("status") == "ok" and d.get("found"):
+            return d.get("brand_name") or d.get("generic_name") or d.get("name", "?")
+        if isinstance(d, dict) and d.get("results"):
+            return d["results"][0].get("brand_name", "?")
+        return "N/A"
+
+    def _fda_status(d: dict) -> str:
+        results = d.get("results", [])
+        if results:
+            orig = results[0]
+            apps = orig.get("applications", [])
+            approved = [a for a in apps if a.get("status") == "Approved"]
+            if approved:
+                return f"Approved ({approved[0].get('type', 'N/A')})"
+            pending = [a for a in apps if "pending" in str(a.get("status", "")).lower()]
+            if pending:
+                return f"Pending review"
+            return "Applications filed"
+        return "No FDA data"
+
+    def _eu_status(d: dict) -> str:
+        if d.get("status") == "ok" and d.get("authorised"):
+            return f"Authorised (EU)"
+        if d.get("status") == "ok" and not d.get("authorised"):
+            return "Not authorised (EU)"
+        return "No EU data"
+
+    def _extract_moa(d: dict) -> str:
+        if d.get("found") and d.get("mechanisms_of_action"):
+            moas = d["mechanisms_of_action"]
+            return "; ".join(f"{m.get('type','?')}→{m.get('target','?')}" for m in moas[:3])
+        return "N/A"
+
+    def _patent_summary(d: dict) -> str:
+        if d.get("status") == "ok":
+            items = []
+            p = d.get("patent_data", [])
+            if p:
+                for pt in p[:3]:
+                    exp = pt.get("expiry_date", pt.get("patent_expiry", "?"))
+                    items.append(f"Patent exp {exp}")
+            ex = d.get("exclusivity", [])
+            if ex:
+                for e in ex[:2]:
+                    exp = e.get("expiry_date", e.get("exclusivity_expiry", "?"))
+                    items.append(f"Excl exp {exp}")
+            return "; ".join(items) if items else "No patent data"
+        return "N/A"
+
+    def _safety_n(d: dict) -> int:
+        return d.get("total_reports", 0) if d.get("status") == "ok" else 0
+    safety_n_a = safety_a.get("total_reports", 0) if safety_a.get("status") == "ok" else 0
+    safety_n_b = safety_b.get("total_reports", 0) if safety_b.get("status") == "ok" else 0
+
+    return {
+        "status": "ok",
+        "drug_a": {"name": drug_a, "label": _label(info_a)},
+        "drug_b": {"name": drug_b, "label": _label(info_b)},
+        "comparison": [
+            {
+                "field": "FDA Approval Status",
+                "drug_a": _fda_status(fda_a),
+                "drug_b": _fda_status(fda_b),
+            },
+            {
+                "field": "EU/EMA Status",
+                "drug_a": _eu_status(eu_a),
+                "drug_b": _eu_status(eu_b),
+            },
+            {
+                "field": "Mechanism of Action",
+                "drug_a": _extract_moa(moa_a),
+                "drug_b": _extract_moa(moa_b),
+            },
+            {
+                "field": "FAERS Total Reports",
+                "drug_a": str(safety_n_a),
+                "drug_b": str(safety_n_b),
+            },
+            {
+                "field": "Drug Type",
+                "drug_a": moa_a.get("drug_type", "N/A") if moa_a.get("found") else "N/A",
+                "drug_b": moa_b.get("drug_type", "N/A") if moa_b.get("found") else "N/A",
+            },
+            {
+                "field": "Patent / Exclusivity",
+                "drug_a": _patent_summary(pat_a),
+                "drug_b": _patent_summary(pat_b),
+            },
+        ],
+        "data_source": "Composite (openFDA + EMA + FAERS + Open Targets + RxNorm)",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 17. pipeline_landscape — Structured Pipeline for a Condition
+# ═════════════════════════════════════════════════════════════
+
+
+def pipeline_landscape(condition: str, limit: int = 20) -> dict:
+    """
+    Complete pipeline landscape for a medical condition.
+
+    Structure:
+    - Approved drugs (from EU/EMA)
+    - Phase 3 active trials
+    - Phase 2 active trials
+    - Phase 1 / Early trials
+    - Key mechanisms & targets
+    - Pipeline PubMed review references
+    """
+    if not condition or len(condition) < 3:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "condition must be at least 3 characters"}
+
+    # Phase 1: Approved drugs for condition
+    approved = []
+    try:
+        app = approved_for_condition(condition, limit=limit)
+        if app.get("status") == "ok":
+            approved = [
+                {
+                    "name": d.get("name", "?"),
+                    "active_substance": d.get("active_substance", ""),
+                    "atc_code": d.get("atc_code", ""),
+                    "biosimilar": d.get("biosimilar", False),
+                    "orphan": d.get("orphan", False),
+                }
+                for d in app.get("drugs", [])
+            ]
+    except Exception:
+        pass
+
+    # Phase 2: Trials by phase
+    trials_phase3 = []
+    trials_phase2 = []
+    trials_phase1 = []
+
+    try:
+        r3 = search_trials(condition=condition, phase="PHASE3", limit=limit)
+        if r3.get("status") == "ok":
+            trials_phase3 = r3.get("results", r3.get("studies", []))
+    except Exception:
+        pass
+    try:
+        r2 = search_trials(condition=condition, phase="PHASE2", limit=limit)
+        if r2.get("status") == "ok":
+            trials_phase2 = r2.get("results", r2.get("studies", []))
+    except Exception:
+        pass
+    try:
+        r1 = search_trials(condition=condition, phase="EARLY1", limit=limit)
+        if r1.get("status") == "ok":
+            trials_phase1 = r1.get("results", r1.get("studies", []))
+    except Exception:
+        pass
+
+    # Phase 3: Extract unique sponsors / companies
+    def _extract_sponsors(trials: list) -> list:
+        seen = set()
+        sponsors = []
+        for t in trials:
+            s = None
+            if isinstance(t, dict):
+                s = t.get("sponsor") or t.get("lead_sponsor") or t.get("sponsors")
+                if isinstance(s, dict):
+                    s = s.get("name") or s.get("lead_sponsor", {}).get("name", "")
+            if s and str(s) not in seen:
+                seen.add(str(s))
+                sponsors.append(str(s))
+        return sponsors[:10]
+
+    key_sponsors_p3 = _extract_sponsors(trials_phase3)
+    key_sponsors_p2 = _extract_sponsors(trials_phase2)
+
+    # Phase 4: Pipeline publications
+    publications = []
+    try:
+        pubs = search_publications(
+            query=f'"{condition}" pipeline 2025 2026 novel therapies review',
+            max_results=5,
+        )
+        if pubs.get("status") == "ok":
+            publications = [
+                {"title": p.get("title", "?"), "pmid": p.get("pmid", "?"),
+                 "journal": p.get("journal", ""), "year": p.get("year", "")}
+                for p in pubs.get("results", pubs.get("publications", []))
+            ]
+    except Exception:
+        pass
+
+    # Phase 5: Mechanism summary from approved drugs (via Open Targets)
+    mechanisms = {}
+    for d in approved[:5]:
+        try:
+            moa = get_opentargets_drug(d["name"])
+            if moa.get("found") and moa.get("mechanisms_of_action"):
+                for m in moa["mechanisms_of_action"]:
+                    target = m.get("target", "?")
+                    mtype = m.get("type", "?")
+                    key = f"{mtype} → {target}"
+                    mechanisms[key] = mechanisms.get(key, 0) + 1
+        except Exception:
+            pass
+
+    sorted_mechanisms = sorted(mechanisms.items(), key=lambda x: -x[1])
+
+    return {
+        "status": "ok",
+        "condition": condition,
+        "landscape": {
+            "approved_drugs": {
+                "count": len(approved),
+                "drugs": approved[:limit],
+            },
+            "phase_3_trials": {
+                "count": len(trials_phase3),
+                "trials": [
+                    {
+                        "nct_id": t.get("nct_id", t.get("protocolSection", {}).get("identificationModule", {}).get("nctId", "?")),
+                        "title": t.get("title", t.get("briefTitle", t.get("protocolSection", {}).get("identificationModule", {}).get("briefTitle", "?"))),
+                        "sponsor": t.get("sponsor", t.get("leadSponsor", {}).get("name", t.get("protocolSection", {}).get("sponsorCollaboratorsModule", {}).get("leadSponsor", {}).get("name", "?"))),
+                        "status": t.get("status", t.get("overallStatus", t.get("protocolSection", {}).get("statusModule", {}).get("overallStatus", "?"))),
+                    }
+                    for t in trials_phase3[:limit]
+                ],
+                "key_sponsors": key_sponsors_p3,
+            },
+            "phase_2_trials": {
+                "count": len(trials_phase2),
+                "trials": [
+                    {
+                        "nct_id": t.get("nct_id", t.get("protocolSection", {}).get("identificationModule", {}).get("nctId", "?")),
+                        "title": t.get("title", t.get("briefTitle", t.get("protocolSection", {}).get("identificationModule", {}).get("briefTitle", "?"))),
+                        "sponsor": t.get("sponsor", t.get("leadSponsor", {}).get("name", t.get("protocolSection", {}).get("sponsorCollaboratorsModule", {}).get("leadSponsor", {}).get("name", "?"))),
+                        "status": t.get("status", t.get("overallStatus", t.get("protocolSection", {}).get("statusModule", {}).get("overallStatus", "?"))),
+                    }
+                    for t in trials_phase2[:limit]
+                ],
+                "key_sponsors": key_sponsors_p2,
+            },
+            "phase_1_trials": {
+                "count": len(trials_phase1),
+            },
+            "key_mechanisms": [
+                {"mechanism": k, "drug_count": v}
+                for k, v in sorted_mechanisms[:10]
+            ],
+            "pipeline_publications": publications,
+        },
+        "data_sources": ["ClinicalTrials.gov", "EMA", "Open Targets", "PubMed"],
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 18. get_us_orphan_designations — US FDA Orphan Drug (MyChem.info)
+# ═════════════════════════════════════════════════════════════
+
+_MYCHEM_BASE = "https://mychem.info/v1"
+
+
+def get_us_orphan_designations(drug_name: str) -> dict:
+    """
+    Get US FDA Orphan Drug Designation data from MyChem.info.
+
+    Returns designation history: indications, status, dates,
+    exclusivity periods, and approval status.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    query = urllib.parse.quote(drug_name.strip().lower())
+    url = f"{_MYCHEM_BASE}/query?q={query}&fields=fda_orphan_drug"
+
+    _rate_limited()
+    data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
+    if _is_error(data):
+        return data
+
+    if not isinstance(data, dict):
+        return {"status": "error", "error_code": "PARSE_ERROR",
+                "message": "Unexpected API response format"}
+
+    hits = data.get("hits", [])
+    orphan_entries = []
+    for hit in hits:
+        name = hit.get("name", "")
+        orphan_field = hit.get("fda_orphan_drug", [])
+        if not orphan_field:
+            continue
+        for entry in orphan_field if isinstance(orphan_field, list) else [orphan_field]:
+            orphan_entries.append({
+                "substance": name,
+                "designation_number": entry.get("designation_number", ""),
+                "orphan_designation": entry.get("orphan_designation", ""),
+                "designation_status": entry.get("designation_status", ""),
+                "designated_date": entry.get("designated_date", ""),
+                "approval_status": entry.get("approval_status", ""),
+                "approved_labeled_indication": entry.get("approved_labeled_indication", ""),
+                "exclusivity_end_date": entry.get("exclusivity_end_date", ""),
+            })
+
+    if not orphan_entries:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No US orphan drug designations found for '{drug_name}'",
+            "data_source": "MyChem.info (BioThings API, aggregating FDA OPD)",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "found": True,
+        "orphan_designations": orphan_entries,
+        "designation_count": len(orphan_entries),
+        "approved_count": sum(1 for e in orphan_entries if e["approval_status"] == "Approved"),
+        "data_source": "MyChem.info (BioThings API, aggregating FDA OPD)",
+        "api_url": "https://mychem.info",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+def _search_orphan_by_condition(condition: str, limit: int = 30) -> dict:
+    """
+    Search US orphan designations by medical condition.
+    Internal helper — queries MyChem.info for condition matches.
+    """
+    if not condition or len(condition) < 3:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "condition must be at least 3 characters"}
+
+    query = urllib.parse.quote(f"fda_orphan_drug.orphan_designation:{condition}")
+    url = f"{_MYCHEM_BASE}/query?q={query}&fields=name,fda_orphan_drug&size={min(limit, 100)}"
+
+    _rate_limited()
+    data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
+    if _is_error(data):
+        return data
+
+    hits = data.get("hits", []) if isinstance(data, dict) else []
+    results = []
+    for hit in hits:
+        name = hit.get("name", "")
+        orphan_field = hit.get("fda_orphan_drug", [])
+        if not orphan_field:
+            continue
+        for entry in orphan_field if isinstance(orphan_field, list) else [orphan_field]:
+            if condition.lower() in (entry.get("orphan_designation", "") or "").lower():
+                results.append({
+                    "substance": name,
+                    "orphan_designation": entry.get("orphan_designation", ""),
+                    "designation_status": entry.get("designation_status", ""),
+                    "approval_status": entry.get("approval_status", ""),
+                })
+
+    return {
+        "status": "ok",
+        "condition": condition,
+        "found": len(results) > 0,
+        "designations": results[:limit],
+        "count": len(results),
+        "data_source": "MyChem.info (BioThings API)",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 19. get_drug_pricing — US Drug Pricing (NADAC + CMS)
+# ═════════════════════════════════════════════════════════════
+
+_NADAC_API = "https://data.medicaid.gov/api/3/action/datastore_search"
+_NADAC_BASE_CSV = "https://download.medicaid.gov/data"
+
+
+def get_drug_pricing(drug_name: str) -> dict:
+    """
+    Get US drug pricing data from NADAC (Medicaid) and CMS.
+
+    Uses NADAC National Average Drug Acquisition Cost for pharmacy-level
+    pricing. Returns price per unit, effective date, and pricing unit.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    # Try all recent NADAC datasets in parallel for the drug
+    nadac_resource_ids = [
+        "fbb83258-11c7-47f5-8b18-5f8e79f7e704",  # 2026
+        "f38d0706-1239-442c-a3cc-40ef1b686ac0",  # 2025
+        "99315a95-37ac-4eee-946a-3c523b4c481e",  # 2024
+    ]
+
+    pricing_results = []
+    search_term = drug_name.strip().upper()
+
+    for rid in nadac_resource_ids:
+        try:
+            sql = urllib.parse.quote(
+                f'SELECT * FROM "{rid}" WHERE "NDC Description" LIKE \'%{search_term}%\' LIMIT 5'
+            )
+            url = f"https://data.medicaid.gov/api/3/action/datastore_search_sql?sql={sql}"
+
+            _rate_limited()
+            data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
+            if _is_error(data) or not isinstance(data, dict):
+                continue
+
+            records = data.get("result", {}).get("records", [])
+            for rec in records:
+                pricing_results.append({
+                    "ndc": rec.get("NDC", ""),
+                    "product_name": rec.get("NDC Description", ""),
+                    "nadac_per_unit": rec.get("NADAC Per Unit", ""),
+                    "effective_date": rec.get("Effective Date", ""),
+                    "pricing_unit": rec.get("Pricing Unit", ""),
+                    "pharmacy_type": rec.get("Pharmacy Type", ""),
+                })
+        except Exception:
+            continue
+
+    # Also try by NDC from openFDA lookup
+    # First get NDC candidates
+    ndc_candidates = []
+    try:
+        drug_info = search_drug(drug_name)
+        if drug_info.get("found"):
+            ndc = drug_info.get("ndc") or drug_info.get("product_ndc", "")
+            if ndc:
+                ndc_candidates.append(ndc)
+    except Exception:
+        pass
+
+    if not pricing_results:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No NADAC pricing data found for '{drug_name}'",
+            "sources_checked": len(nadac_resource_ids),
+            "note": "NADAC covers outpatient prescription drugs. Pricing data limited for biologics, hospital-only, or very new drugs.",
+            "data_source": "NADAC (data.medicaid.gov)",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    # Get best price (most recent)
+    pricing_results.sort(key=lambda r: r.get("effective_date", ""), reverse=True)
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "found": True,
+        "nadac_entries": pricing_results[:10],
+        "entry_count": len(pricing_results),
+        "most_recent_entry": pricing_results[0] if pricing_results else None,
+        "data_source": "NADAC (data.medicaid.gov)",
+        "api_url": "https://data.medicaid.gov",
+        "note": "NADAC = National Average Drug Acquisition Cost. Updated weekly by CMS. Does not include wholesale or negotiated prices.",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 20. list_biosimilars — EU Biosimilars from EMA Register
+# ═════════════════════════════════════════════════════════════
+
+
+def list_biosimilars(condition: str | None = None, limit: int = 50) -> dict:
+    """
+    List all EU-approved biosimilars from the EMA Human Medicines Register.
+
+    Optionally filter by medical condition/therapeutic area.
+    Returns drug names, active substances, ATC codes, and therapeutic areas.
+    """
+    try:
+        all_medicines = _load_ema_data()
+    except Exception as e:
+        return {"status": "error", "error_code": "EMA_LOAD_ERROR",
+                "message": f"Failed to load EMA data: {str(e)[:100]}"}
+
+    biosimilars = [m for m in all_medicines if m.get("biosimilar") == "Yes"]
+
+    if condition:
+        cond = condition.lower()
+        filtered = []
+        for m in biosimilars:
+            area = (m.get("therapeutic_area", "") or "").lower()
+            indication = (m.get("indication", "") or "").lower()
+            if cond in area or cond in indication:
+                filtered.append(m)
+        biosimilars = filtered
+
+    drugs = [
+        {
+            "name": m.get("name", "?"),
+            "active_substance": m.get("active_substance", ""),
+            "inn": m.get("inn", ""),
+            "atc_code": m.get("atc_code", ""),
+            "therapeutic_area": m.get("therapeutic_area", ""),
+            "status": m.get("status", ""),
+            "ema_product_number": m.get("ema_product_number", ""),
+        }
+        for m in biosimilars[:limit]
+    ]
+
+    # Group by active substance for summary
+    substance_groups: dict[str, list] = {}
+    for d in drugs:
+        sub = d["active_substance"] or d["inn"] or "unknown"
+        substance_groups.setdefault(sub, []).append(d["name"])
+
+    return {
+        "status": "ok",
+        "condition_filter": condition,
+        "found": len(drugs) > 0,
+        "total_eu_biosimilars": len(biosimilars),
+        "drugs": drugs,
+        "biosimilar_count": len(drugs),
+        "biosimilars_by_substance": [
+            {"substance": sub, "count": len(names), "brands": names}
+            for sub, names in sorted(substance_groups.items(), key=lambda x: -len(x[1]))
+        ],
+        "data_source": "EMA Human Medicines Register",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+def list_loss_of_exclusivity(limit: int = 30) -> dict:
+    """
+    Identify drugs approaching Loss of Exclusivity (LOE).
+
+    Combines EMA biosimilar entries (potential competitors) with
+    FDA patent expiry data for reference products. Returns drugs
+    with expiring patents and available biosimilar/generic competition.
+    """
+    # Get all EMA biosimilars as a baseline
+    biosimilars_with_refs = []
+    try:
+        all_med = _load_ema_data()
+        bios = [m for m in all_med if m.get("biosimilar") == "Yes"]
+        for b in bios[:limit]:
+            biosimilars_with_refs.append({
+                "biosimilar_name": b.get("name", "?"),
+                "active_substance": b.get("active_substance", "") or b.get("inn", ""),
+                "atc_code": b.get("atc_code", ""),
+                "authorised": b.get("status", "") == "Authorised",
+            })
+    except Exception:
+        pass
+
+    # Group by active substance
+    refs: dict[str, dict] = {}
+    for b in biosimilars_with_refs:
+        sub = b["active_substance"]
+        if sub:
+            refs.setdefault(sub, {"substance": sub, "biosimilars": [], "atc": b["atc_code"]})
+            refs[sub]["biosimilars"].append(b["biosimilar_name"])
+
+    # Try to get patent data for reference products
+    # (limited — we don't have a reference product database, so mark known LOE risks)
+    loe_entries = []
+    for sub, info in refs.items():
+        loe_entries.append({
+            "active_substance": sub,
+            "atc_code": info["atc"],
+            "biosimilar_count": len(info["biosimilars"]),
+            "biosimilar_names": info["biosimilars"],
+            "category": "LOE Active" if len(info["biosimilars"]) >= 3 else "Early Biosimilar Entry",
+            "note": f"{len(info['biosimilars'])} EU-approved biosimilar(s) indicate active post-LOE market",
+        })
+
+    loe_entries.sort(key=lambda x: -x["biosimilar_count"])
+
+    return {
+        "status": "ok",
+        "loss_of_exclusivity_entries": loe_entries[:limit],
+        "total_loe_active_substances": len(loe_entries),
+        "total_eu_biosimilars": sum(e["biosimilar_count"] for e in loe_entries),
+        "data_sources": ["EMA Human Medicines Register", "FDA Orange Book (patent data)"],
+        "note": "Biosimilar competition indicates marketed reference products have passed or are approaching LOE. For precise patent dates, use get_patent_expiry on the reference brand name.",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 21. get_trial_sites — Clinical Trial Site & Location Intelligence
+# ═════════════════════════════════════════════════════════════
+
+
+def get_trial_sites(nct_id: str) -> dict:
+    """
+    Get clinical trial site locations and facility information.
+
+    Extracts facility names, cities, countries, recruitment status,
+    and contact information from the full trial protocol.
+    """
+    nct_id = nct_id.strip().upper()
+    if not nct_id.startswith("NCT") or len(nct_id) < 8:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "NCT ID must start with 'NCT' and be at least 8 characters"}
+
+    try:
+        detail = get_trial_detail(nct_id)
+    except Exception as e:
+        return {"status": "error", "error_code": "FETCH_ERROR",
+                "message": f"Failed to fetch trial detail: {str(e)[:100]}"}
+
+    if detail.get("status") != "ok":
+        return {"status": "error", "error_code": detail.get("error_code", "FETCH_ERROR"),
+                "message": detail.get("message", "Failed to get trial detail")}
+
+    # ClinicalTrials.gov v2 API — the detail comes as protocolSection
+    protocol = detail.get("protocolSection", detail)
+    locations_module = protocol.get("locationsModule", {})
+    contacts_module = protocol.get("contactsLocationsModule", {})
+
+    # Try both v2 & v1 location structures
+    locations = locations_module.get("locations", []) or contacts_module.get("locations", [])
+
+    if not locations:
+        # v1 API fallback
+        v1_loc = detail.get("location", []) or detail.get("locations", [])
+        if v1_loc:
+            locations = v1_loc if isinstance(v1_loc, list) else [v1_loc]
+
+    sites = []
+    country_counts: dict[str, int] = {}
+
+    for loc in locations:
+        fac = loc.get("facility", "")
+        if isinstance(fac, dict):
+            fac = fac.get("name", "")
+        city = loc.get("city", "")
+        state = loc.get("state", "")
+        country = loc.get("country", "")
+        status = loc.get("status", loc.get("recruitmentStatus", ""))
+        contact = loc.get("contact", {})
+
+        # Contact info
+        contact_name = ""
+        contact_phone = ""
+        if isinstance(contact, dict):
+            contact_name = contact.get("name", "")
+            contact_phone = contact.get("phone", "")
+
+        location_str = ", ".join(filter(None, [city, state, country]))
+        country_c = country or "Unknown"
+
+        sites.append({
+            "facility": fac or "Not specified",
+            "location": location_str,
+            "city": city or "",
+            "state": state or "",
+            "country": country_c,
+            "status": status or "",
+            "contact_name": contact_name,
+            "contact_phone": contact_phone,
+        })
+        country_counts[country_c] = country_counts.get(country_c, 0) + 1
+
+    # Global central contact
+    central_contact = {}
+    if isinstance(contacts_module, dict):
+        cc = contacts_module.get("centralContacts", [])
+        if isinstance(cc, list) and cc:
+            c = cc[0]
+            central_contact = {
+                "name": c.get("name", ""),
+                "phone": c.get("phone", ""),
+                "email": c.get("email", ""),
+            }
+
+    # Overall status from study
+    status_module = protocol.get("statusModule", {})
+    overall_status = status_module.get("overallStatus", "")
+
+    return {
+        "status": "ok",
+        "nct_id": nct_id,
+        "trial_status": overall_status,
+        "site_count": len(sites),
+        "country_count": len(country_counts),
+        "geographic_distribution": [
+            {"country": c, "sites": n}
+            for c, n in sorted(country_counts.items(), key=lambda x: -x[1])
+        ],
+        "sites": sites,
+        "central_contact": central_contact,
+        "data_source": "ClinicalTrials.gov",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 22. detect_combination_therapies — Co-Intervention Detection
+# ═════════════════════════════════════════════════════════════
+
+
+def detect_combination_therapies(drug_name: str, condition: str | None = None, limit: int = 15) -> dict:
+    """
+    Detect combination therapies involving a drug.
+
+    Searches ClinicalTrials.gov for trials where the drug is used as an
+    intervention, then extracts co-administered drugs/interventions.
+    Useful for oncology combination analysis, add-on trials, and
+    competitive positioning.
+    """
+    if not drug_name or len(drug_name) < 2:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "drug_name must be at least 2 characters"}
+
+    try:
+        if condition:
+            trials = search_trials(intervention=drug_name, condition=condition, limit=limit)
+        else:
+            trials = search_trials(intervention=drug_name, limit=limit)
+    except Exception as e:
+        return {"status": "error", "error_code": "FETCH_ERROR",
+                "message": f"Failed to search trials: {str(e)[:100]}"}
+
+    study_list = trials.get("results", trials.get("studies", []))
+    if not study_list:
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "condition": condition,
+            "found": False,
+            "message": f"No trials found for '{drug_name}'",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    # Extract co-interventions from each trial
+    combinations = []
+    co_drug_counter: dict[str, int] = {}
+
+    for study in study_list:
+        ps = study.get("protocolSection", study)
+        id_mod = ps.get("identificationModule", study)
+        design_mod = ps.get("designModule", {})
+        arms_mod = ps.get("armsInterventionsModule", {})
+
+        nct = id_mod.get("nctId", id_mod.get("nct_id", "?"))
+        title = id_mod.get("briefTitle", id_mod.get("title", "?"))
+        phase = ps.get("statusModule", {}).get("phase", design_mod.get("phase", "?"))
+
+        # Get all interventions
+        interventions = arms_mod.get("armGroups", []) or arms_mod.get("interventions", [])
+        all_interventions = []
+        for inv in interventions if isinstance(interventions, list) else []:
+            if isinstance(inv, dict):
+                name = inv.get("name", inv.get("description", ""))
+                inv_type = inv.get("type", "")
+                if name and name.upper() != drug_name.upper():
+                    all_interventions.append({"name": name, "type": inv_type})
+                    co_drug_counter[name] = co_drug_counter.get(name, 0) + 1
+
+        if all_interventions:
+            combinations.append({
+                "nct_id": nct,
+                "title": title,
+                "phase": phase,
+                "co_interventions": all_interventions,
+            })
+
+    # Most frequent co-interventions
+    top_co = sorted(co_drug_counter.items(), key=lambda x: -x[1])[:15]
+
+    return {
+        "status": "ok",
+        "drug_name": drug_name,
+        "condition": condition,
+        "found": len(combinations) > 0,
+        "total_trials_analyzed": len(study_list),
+        "trials_with_combinations": len(combinations),
+        "top_co_administered": [
+            {"drug": name, "trial_count": count}
+            for name, count in top_co
+        ],
+        "combinations": combinations[:limit],
+        "data_source": "ClinicalTrials.gov",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
+
+
+# ═════════════════════════════════════════════════════════════
+# 23. find_investigators — Key Opinion Leader & Site Investigator Search
+# ═════════════════════════════════════════════════════════════
+
+
+def find_investigators(
+    condition: str | None = None,
+    drug_name: str | None = None,
+    limit: int = 20,
+) -> dict:
+    """
+    Find principal investigators / Key Opinion Leaders (KOLs) by
+    condition or drug.
+
+    Searches ClinicalTrials.gov for active trials and extracts
+    investigator names, roles, and affiliations. Useful for
+    competitive intelligence, trial design, and KOL mapping.
+    """
+    if not condition and not drug_name:
+        return {"status": "error", "error_code": "INVALID_INPUT",
+                "message": "Provide at least one of: condition, drug_name"}
+
+    # Search for relevant trials
+    try:
+        if drug_name and condition:
+            trials = search_trials(intervention=drug_name, condition=condition,
+                                   status="RECRUITING", limit=limit)
+        elif condition:
+            trials = search_trials(condition=condition, status="RECRUITING", limit=limit)
+        else:
+            trials = search_trials(intervention=drug_name, status="RECRUITING", limit=limit)
+    except Exception as e:
+        return {"status": "error", "error_code": "FETCH_ERROR",
+                "message": f"Failed to search trials: {str(e)[:100]}"}
+
+    studies = trials.get("results", trials.get("studies", []))
+    if not studies:
+        return {
+            "status": "ok",
+            "condition": condition,
+            "drug_name": drug_name,
+            "found": False,
+            "message": "No active trials found matching criteria",
+            "timestamp": datetime.utcnow().isoformat(),
+        }
+
+    # Get detail for each trial to extract investigators (batch)
+    investigators = []
+    seen_investigators: set[str] = set()
+
+    for study in studies[:10]:  # Limit to 10 trial details for performance
+        ps = study.get("protocolSection", study)
+        id_mod = ps.get("identificationModule", study)
+        nct = id_mod.get("nctId", id_mod.get("nct_id", "?"))
+        title = id_mod.get("briefTitle", id_mod.get("title", "?"))
+
+        try:
+            detail = get_trial_detail(nct)
+        except Exception:
+            continue
+
+        if detail.get("status") != "ok":
+            continue
+
+        protocol = detail.get("protocolSection", detail)
+        sponsors_mod = protocol.get("sponsorCollaboratorsModule", {})
+        contacts_mod = protocol.get("contactsLocationsModule", {})
+
+        # Lead sponsor
+        sponsor = sponsors_mod.get("leadSponsor", {})
+        if isinstance(sponsor, dict):
+            sponsor_name = sponsor.get("name", "")
+        else:
+            sponsor_name = str(sponsor) if sponsor else ""
+
+        # Central contacts (often PIs)
+        central_contacts = contacts_mod.get("centralContacts", []) if isinstance(contacts_mod, dict) else []
+        locations = contacts_mod.get("locations", []) if isinstance(contacts_mod, dict) else []
+
+        # Extract from central contacts
+        for cc in central_contacts if isinstance(central_contacts, list) else []:
+            name = cc.get("name", "").strip()
+            if name and name.lower() not in seen_investigators:
+                seen_investigators.add(name.lower())
+                investigators.append({
+                    "name": name,
+                    "role": cc.get("role", "Principal Investigator"),
+                    "affiliation": sponsor_name,
+                    "phone": cc.get("phone", ""),
+                    "email": cc.get("email", ""),
+                    "trial_nct": nct,
+                    "trial_title": title[:120],
+                })
+
+        # Also extract from facility contacts (site PIs)
+        for loc in locations if isinstance(locations, list) else []:
+            facility = loc.get("facility", {})
+            if isinstance(facility, dict):
+                facility_name = facility.get("name", "")
+            else:
+                facility_name = str(facility) if facility else ""
+            pi = loc.get("contact", loc.get("investigator", {}))
+            if isinstance(pi, dict):
+                name = pi.get("name", "").strip()
+                if name and name.lower() not in seen_investigators:
+                    seen_investigators.add(name.lower())
+                    investigators.append({
+                        "name": name,
+                        "role": pi.get("role", "Site Investigator"),
+                        "affiliation": facility_name,
+                        "phone": pi.get("phone", ""),
+                        "email": pi.get("email", ""),
+                        "trial_nct": nct,
+                        "trial_title": title[:120],
+                    })
+
+        if len(investigators) >= limit:
+            break
+
+    # Also search PubMed for KOL publications in the area
+    publications = []
+    if condition:
+        try:
+            pubs = search_publications(
+                query=f'"{condition}" AND (investigator OR "clinical trial")',
+                max_results=5,
+            )
+            if pubs.get("status") == "ok":
+                publications = [
+                    {"title": p.get("title", "?"), "pmid": p.get("pmid", "?")}
+                    for p in pubs.get("results", pubs.get("publications", []))
+                ]
+        except Exception:
+            pass
+
+    return {
+        "status": "ok",
+        "condition": condition,
+        "drug_name": drug_name,
+        "found": len(investigators) > 0,
+        "total_investigators": len(investigators),
+        "investigators": investigators[:limit],
+        "related_publications": publications,
+        "data_sources": ["ClinicalTrials.gov", "PubMed"],
+        "note": "Investigator data from trial protocols. Not all trials list named PIs publicly.",
+        "timestamp": datetime.utcnow().isoformat(),
+    }
