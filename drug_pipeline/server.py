@@ -32,53 +32,104 @@ Tools:
   detect_combination_therapies — Co-administered drug detection
   find_investigators   — Principal investigator / KOL search
 """
+
 from __future__ import annotations
 
 import json
 import sys
 import time
-from datetime import datetime, timezone
 from typing import Any
 
-from pydantic import BaseModel, Field
-
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
 import mcp.server.stdio
 import mcp.types as types
+from mcp.server import NotificationOptions, Server
+from mcp.server.models import InitializationOptions
+from pydantic import BaseModel, Field
 
 from . import __version__
 from .sources import (
-    search_trials as _search_trials,
-    get_trial_detail as _get_trial_detail,
-    search_drug as _search_drug,
-    get_fda_approvals as _get_fda_approvals,
-    search_publications as _search_publications,
-    get_eu_approvals as _get_eu_approvals,
-    get_safety_data as _get_safety_data,
     approved_for_condition as _approved_for_condition,
-    get_trial_results as _get_trial_results,
-    list_orphan_drugs as _list_orphan_drugs,
+)
+from .sources import (
     company_pipeline as _company_pipeline,
-    get_drug_label as _get_drug_label,
-    get_recalls as _get_recalls,
-    detect_safety_signals as _detect_safety_signals,
-    get_patent_expiry as _get_patent_expiry,
-    get_drug_interactions as _get_drug_interactions,
-    get_opentargets_drug as _get_opentargets_drug,
-    get_dailymed_label as _get_dailymed_label,
+)
+from .sources import (
     compare_drugs as _compare_drugs,
-    pipeline_landscape as _pipeline_landscape,
-    get_us_orphan_designations as _get_us_orphan_designations,
-    get_drug_pricing as _get_drug_pricing,
-    list_biosimilars as _list_biosimilars,
-    list_loss_of_exclusivity as _list_loss_of_exclusivity,
-    get_trial_sites as _get_trial_sites,
+)
+from .sources import (
     detect_combination_therapies as _detect_combination_therapies,
-    find_investigators as _find_investigators,
+)
+from .sources import (
+    detect_safety_signals as _detect_safety_signals,
+)
+from .sources import (
     drug_pipeline_summary,
-    VALID_PHASES,
-    VALID_STATUSES,
+)
+from .sources import (
+    find_investigators as _find_investigators,
+)
+from .sources import (
+    get_dailymed_label as _get_dailymed_label,
+)
+from .sources import (
+    get_drug_interactions as _get_drug_interactions,
+)
+from .sources import (
+    get_drug_label as _get_drug_label,
+)
+from .sources import (
+    get_drug_pricing as _get_drug_pricing,
+)
+from .sources import (
+    get_eu_approvals as _get_eu_approvals,
+)
+from .sources import (
+    get_fda_approvals as _get_fda_approvals,
+)
+from .sources import (
+    get_opentargets_drug as _get_opentargets_drug,
+)
+from .sources import (
+    get_patent_expiry as _get_patent_expiry,
+)
+from .sources import (
+    get_recalls as _get_recalls,
+)
+from .sources import (
+    get_safety_data as _get_safety_data,
+)
+from .sources import (
+    get_trial_detail as _get_trial_detail,
+)
+from .sources import (
+    get_trial_results as _get_trial_results,
+)
+from .sources import (
+    get_trial_sites as _get_trial_sites,
+)
+from .sources import (
+    get_us_orphan_designations as _get_us_orphan_designations,
+)
+from .sources import (
+    list_biosimilars as _list_biosimilars,
+)
+from .sources import (
+    list_loss_of_exclusivity as _list_loss_of_exclusivity,
+)
+from .sources import (
+    list_orphan_drugs as _list_orphan_drugs,
+)
+from .sources import (
+    pipeline_landscape as _pipeline_landscape,
+)
+from .sources import (
+    search_drug as _search_drug,
+)
+from .sources import (
+    search_publications as _search_publications,
+)
+from .sources import (
+    search_trials as _search_trials,
 )
 
 _start_time = time.time()
@@ -90,6 +141,7 @@ _start_time = time.time()
 
 class SearchTrialsInput(BaseModel):
     """Search for clinical trials by condition, phase, status, or sponsor."""
+
     condition: str | None = Field(
         default=None,
         description="Medical condition or disease (e.g., 'type 2 diabetes', 'non-small cell lung cancer')",
@@ -112,13 +164,16 @@ class SearchTrialsInput(BaseModel):
         description="Drug or intervention name (e.g., 'semaglutide', 'pembrolizumab')",
     )
     limit: int = Field(
-        default=10, ge=1, le=50,
+        default=10,
+        ge=1,
+        le=50,
         description="Maximum results to return (1-50)",
     )
 
 
 class GetTrialDetailInput(BaseModel):
     """Get full protocol details for a specific clinical trial by NCT ID."""
+
     nct_id: str = Field(
         ...,
         min_length=8,
@@ -129,34 +184,43 @@ class GetTrialDetailInput(BaseModel):
 
 class LookupDrugInput(BaseModel):
     """Look up a drug by brand or generic name."""
+
     name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide')",
     )
 
 
 class GetApprovalsInput(BaseModel):
     """Get FDA approval history for a drug."""
+
     drug_name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide')",
     )
 
 
 class SearchPublicationsInput(BaseModel):
     """Search PubMed for publications related to a drug, condition, or trial."""
+
     query: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Search query (e.g., 'semaglutide diabetes phase 3', 'NCT03178617')",
     )
     max_results: int = Field(
-        default=10, ge=1, le=30,
+        default=10,
+        ge=1,
+        le=30,
         description="Maximum publications to return (1-30)",
     )
 
 
 class DrugPipelineInput(BaseModel):
     """Composite intelligence: drug info + trials + FDA + publications in one call."""
+
     drug_name: str | None = Field(
         default=None,
         description="Brand or generic drug name (optional if condition is provided)",
@@ -169,56 +233,72 @@ class DrugPipelineInput(BaseModel):
 
 class GetEuApprovalsInput(BaseModel):
     """Get EU/EMA approval status for a drug."""
+
     drug_name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide')",
     )
 
 
 class GetSafetyDataInput(BaseModel):
     """Get FDA Adverse Event Reporting System (FAERS) data."""
+
     drug_name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide')",
     )
 
 
 class ApprovedForConditionInput(BaseModel):
     """Find EU-approved drugs for a medical condition."""
+
     condition: str = Field(
-        ..., min_length=3,
+        ...,
+        min_length=3,
         description="Medical condition (e.g., 'non-small cell lung cancer', 'type 2 diabetes', 'melanoma')",
     )
     limit: int = Field(
-        default=30, ge=5, le=100,
+        default=30,
+        ge=5,
+        le=100,
         description="Maximum number of unique drugs to return (5-100, default 30)",
     )
 
 
 class GetTrialResultsInput(BaseModel):
     """Get results for a completed clinical trial."""
+
     nct_id: str = Field(
-        ..., min_length=8, max_length=16,
+        ...,
+        min_length=8,
+        max_length=16,
         description="NCT identifier (e.g., 'NCT02918162')",
     )
 
 
 class ListOrphanDrugsInput(BaseModel):
     """List drugs with EU Orphan Drug Designation."""
+
     condition: str | None = Field(
         default=None,
         description="Optional medical condition filter (e.g., 'lung cancer', 'leukemia')",
     )
     limit: int = Field(
-        default=50, ge=5, le=200,
+        default=50,
+        ge=5,
+        le=200,
         description="Maximum number of drugs to return (5-200, default 50)",
     )
 
 
 class CompanyPipelineInput(BaseModel):
     """Get the clinical pipeline for a pharmaceutical company."""
+
     company_name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Company name (e.g., 'Novo Nordisk', 'Pfizer', 'Moderna')",
     )
     include_eu: bool = Field(
@@ -226,44 +306,61 @@ class CompanyPipelineInput(BaseModel):
         description="Also look up EU approval status for drugs found in trials",
     )
     limit: int = Field(
-        default=30, ge=5, le=100,
+        default=30,
+        ge=5,
+        le=100,
         description="Maximum results (5-100, default 30)",
     )
 
 
 class DrugNameInput(BaseModel):
     """Drug name input for label, recalls, signals, and patent tools."""
+
     drug_name: str = Field(
-        ..., min_length=2,
+        ...,
+        min_length=2,
         description="Brand or generic drug name (e.g., 'Ozempic', 'semaglutide', 'Keytruda')",
     )
 
 
 class CompareDrugsInput(BaseModel):
     """Head-to-head comparison of two drugs."""
+
     drug_a: str = Field(..., min_length=2, description="First drug name (brand or generic)")
     drug_b: str = Field(..., min_length=2, description="Second drug name (brand or generic)")
 
 
 class PipelineLandscapeInput(BaseModel):
     """Complete pipeline landscape for a medical condition."""
-    condition: str = Field(..., min_length=3, description="Medical condition (e.g., 'non-small cell lung cancer', 'COPD', 'type 2 diabetes')")
-    limit: int = Field(default=20, ge=5, le=50, description="Maximum results per phase (5-50, default 20)")
+
+    condition: str = Field(
+        ...,
+        min_length=3,
+        description="Medical condition (e.g., 'non-small cell lung cancer', 'COPD', 'type 2 diabetes')",
+    )
+    limit: int = Field(
+        default=20, ge=5, le=50, description="Maximum results per phase (5-50, default 20)"
+    )
 
 
 class ListBiosimilarsInput(BaseModel):
     """List EU-approved biosimilars, optionally by condition."""
-    condition: str | None = Field(default=None, description="Optional medical condition / therapeutic area filter")
+
+    condition: str | None = Field(
+        default=None, description="Optional medical condition / therapeutic area filter"
+    )
     limit: int = Field(default=50, ge=5, le=200, description="Maximum results (5-200, default 50)")
 
 
 class LossOfExclusivityInput(BaseModel):
     """Identify drugs approaching Loss of Exclusivity."""
+
     limit: int = Field(default=30, ge=5, le=100, description="Maximum results (5-100, default 30)")
 
 
 class DetectCombinationTherapiesInput(BaseModel):
     """Detect combination therapies involving a drug."""
+
     drug_name: str = Field(..., min_length=2, description="Drug name to analyze for combinations")
     condition: str | None = Field(default=None, description="Optional medical condition filter")
     limit: int = Field(default=15, ge=5, le=30, description="Maximum trials to analyze (5-30)")
@@ -271,9 +368,14 @@ class DetectCombinationTherapiesInput(BaseModel):
 
 class FindInvestigatorsInput(BaseModel):
     """Find principal investigators / KOLs by condition or drug."""
-    condition: str | None = Field(default=None, description="Medical condition to search for investigators")
+
+    condition: str | None = Field(
+        default=None, description="Medical condition to search for investigators"
+    )
     drug_name: str | None = Field(default=None, description="Drug name to find investigators for")
-    limit: int = Field(default=20, ge=5, le=50, description="Maximum investigators to return (5-50)")
+    limit: int = Field(
+        default=20, ge=5, le=50, description="Maximum investigators to return (5-50)"
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -487,6 +589,8 @@ def _handle_find_investigators(**kwargs: Any) -> list[types.TextContent]:
 def _response(data: dict) -> list[types.TextContent]:
     """Wrap a result dict in MCP TextContent."""
     return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
+
+
 TOOLS = {
     "search_trials": {
         "description": (
@@ -856,39 +960,71 @@ async def handle_list_tools() -> list[types.Tool]:
 async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[types.TextContent]:
     meta = TOOLS.get(name)
     if not meta:
-        return [types.TextContent(type="text", text=json.dumps({
-            "status": "error",
-            "error_code": "UNKNOWN_TOOL",
-            "message": f"Tool '{name}' not found. Available: {list(TOOLS.keys())}",
-        }))]
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "error_code": "UNKNOWN_TOOL",
+                        "message": f"Tool '{name}' not found. Available: {list(TOOLS.keys())}",
+                    }
+                ),
+            )
+        ]
     try:
         return meta["handler"](**(arguments or {}))
     except KeyError as e:
-        return [types.TextContent(type="text", text=json.dumps({
-            "status": "error",
-            "error_code": "VALIDATION_ERROR",
-            "message": f"Missing required field: {e}",
-        }))]
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "error_code": "VALIDATION_ERROR",
+                        "message": f"Missing required field: {e}",
+                    }
+                ),
+            )
+        ]
     except ValueError as e:
-        return [types.TextContent(type="text", text=json.dumps({
-            "status": "error",
-            "error_code": "VALIDATION_ERROR",
-            "message": str(e),
-        }))]
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "error_code": "VALIDATION_ERROR",
+                        "message": str(e),
+                    }
+                ),
+            )
+        ]
     except Exception as e:
         import traceback
+
         tb = traceback.format_exc()
-        return [types.TextContent(type="text", text=json.dumps({
-            "status": "error",
-            "error_code": "TOOL_ERROR",
-            "message": str(e)[:200],
-            "traceback": tb.split("\n")[-6:] if "--debug" in sys.argv else "Use --debug for traceback",
-        }))]
+        return [
+            types.TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "error_code": "TOOL_ERROR",
+                        "message": str(e)[:200],
+                        "traceback": tb.split("\n")[-6:]
+                        if "--debug" in sys.argv
+                        else "Use --debug for traceback",
+                    }
+                ),
+            )
+        ]
 
 
 # ─────────────────────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────────────────────
+
 
 async def main() -> None:
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
@@ -909,6 +1045,7 @@ async def main() -> None:
 def run_stdio():
     """Start the MCP server in stdio mode (default)."""
     import asyncio
+
     asyncio.run(main())
 
 
@@ -926,126 +1063,171 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
     sse = SseServerTransport("/messages/")
 
     async def handle_sse(request):
-        async with sse.connect_sse(
-            request.scope, request.receive, request._send
-        ) as streams:
+        async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
             read_stream, write_stream = streams
             await server.run(read_stream, write_stream, server.create_initialization_options())
 
     async def handle_root(request):
-        return JSONResponse({
-            "server": "drug-pipeline",
-            "version": __version__,
-            "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, pricing, site intelligence, and company pipelines. 28 tools, 8 data sources.",
-            "tools": list(TOOLS.keys()),
-            "docs": "https://github.com/DasClown/drug-pipeline-mcp",
-            "endpoints": {
-                "sse": "/sse",
-                "server_card": "/.well-known/mcp/server-card.json",
-                "config_schema": "/.well-known/mcp/config-schema.json",
+        return JSONResponse(
+            {
+                "server": "drug-pipeline",
+                "version": __version__,
+                "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, pricing, site intelligence, and company pipelines. 28 tools, 8 data sources.",
+                "tools": list(TOOLS.keys()),
+                "docs": "https://github.com/DasClown/drug-pipeline-mcp",
+                "endpoints": {
+                    "sse": "/sse",
+                    "server_card": "/.well-known/mcp/server-card.json",
+                    "config_schema": "/.well-known/mcp/config-schema.json",
+                },
             }
-        })
+        )
 
     async def handle_server_card(request):
         tools_list = []
         for name, meta in TOOLS.items():
-            tools_list.append({
-                "name": name,
-                "description": meta["description"],
-                "inputSchema": meta["input_schema"],
-            })
-        return JSONResponse({
-            "serverInfo": {"name": "drug-pipeline", "version": __version__},
-            "description": "Pharmaceutical R&D Intelligence MCP Server. Kombiniert ClinicalTrials.gov, openFDA, EMA, RxNorm, PubMed, und FAERS zu einer umfassenden Pharma-Intelligenz für KI-Agenten.",
-            "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
-            "license": "MIT",
-            "author": {
-                "name": "DrugPipelineMCP",
-                "url": "https://github.com/DasClown",
-            },
-            "iconUrl": "https://raw.githubusercontent.com/DasClown/CropProphEU/main/static/icon.svg",
-            "capabilities": {
-                "tools": {"total": len(tools_list), "list": [t["name"] for t in tools_list]},
-                "resources": {"total": 1, "list": ["ema://medicines"]},
-                "prompts": {"total": 3, "list": ["drug-pipeline", "trial-search", "safety-review"]},
-            },
-            "dataSources": [
-                {"name": "ClinicalTrials.gov", "type": "trials", "url": "https://clinicaltrials.gov/"},
-                {"name": "openFDA", "type": "approvals", "url": "https://open.fda.gov/"},
-                {"name": "EMA", "type": "approvals", "url": "https://www.ema.europa.eu/"},
-                {"name": "RxNorm", "type": "rx", "url": "https://rxnav.nlm.nih.gov/"},
-                {"name": "PubMed", "type": "research", "url": "https://pubmed.ncbi.nlm.nih.gov/"},
-                {"name": "FAERS", "type": "safety", "url": "https://www.fda.gov/drugs/drug-approvals-and-databases/fda-adverse-event-reporting-system-faers"},
-                {"name": "MyChem.info", "type": "orphan-drugs", "url": "https://mychem.info/"},
-                {"name": "NADAC/CMS", "type": "pricing", "url": "https://data.medicaid.gov/"},
-                {"name": "Open Targets", "type": "targets", "url": "https://platform.opentargets.org/"},
-                {"name": "DailyMed (NIH/NLM)", "type": "labels", "url": "https://dailymed.nlm.nih.gov/"},
-            ],
-            "tools": tools_list,
-            "resources": [
+            tools_list.append(
                 {
-                    "name": "EMA Medicines",
-                    "uri": "ema://medicines",
-                    "description": "EU Medicines database: aktuelle EMA-Zulassungen, Indikationen, Wirkstoffe",
-                    "mimeType": "application/json",
+                    "name": name,
+                    "description": meta["description"],
+                    "inputSchema": meta["input_schema"],
+                }
+            )
+        return JSONResponse(
+            {
+                "serverInfo": {"name": "drug-pipeline", "version": __version__},
+                "description": "Pharmaceutical R&D Intelligence MCP Server. Kombiniert ClinicalTrials.gov, openFDA, EMA, RxNorm, PubMed, und FAERS zu einer umfassenden Pharma-Intelligenz für KI-Agenten.",
+                "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
+                "license": "MIT",
+                "author": {
+                    "name": "DrugPipelineMCP",
+                    "url": "https://github.com/DasClown",
                 },
-            ],
-            "prompts": [
-                {
-                    "name": "drug-pipeline",
-                    "description": "Full pipeline for a drug: FDA approvals + EU status + safety + trials + publications",
-                    "arguments": [
-                        {"name": "drug_name", "description": "Drug name (brand or generic)", "required": True},
-                    ],
+                "iconUrl": "https://raw.githubusercontent.com/DasClown/CropProphEU/main/static/icon.svg",
+                "capabilities": {
+                    "tools": {"total": len(tools_list), "list": [t["name"] for t in tools_list]},
+                    "resources": {"total": 1, "list": ["ema://medicines"]},
+                    "prompts": {
+                        "total": 3,
+                        "list": ["drug-pipeline", "trial-search", "safety-review"],
+                    },
                 },
-                {
-                    "name": "trial-search",
-                    "description": "Find clinical trials for a condition with phase/status filters",
-                    "arguments": [
-                        {"name": "condition", "description": "Medical condition to search", "required": True},
-                        {"name": "phase", "description": "Optional phase filter (PHASE1, PHASE2, PHASE3)", "required": False},
-                    ],
-                },
-                {
-                    "name": "safety-review",
-                    "description": "Safety profile for a drug: adverse events, reactions, outcomes",
-                    "arguments": [
-                        {"name": "drug_name", "description": "Drug name to analyze", "required": True},
-                    ],
-                },
-            ],
-        })
+                "dataSources": [
+                    {
+                        "name": "ClinicalTrials.gov",
+                        "type": "trials",
+                        "url": "https://clinicaltrials.gov/",
+                    },
+                    {"name": "openFDA", "type": "approvals", "url": "https://open.fda.gov/"},
+                    {"name": "EMA", "type": "approvals", "url": "https://www.ema.europa.eu/"},
+                    {"name": "RxNorm", "type": "rx", "url": "https://rxnav.nlm.nih.gov/"},
+                    {
+                        "name": "PubMed",
+                        "type": "research",
+                        "url": "https://pubmed.ncbi.nlm.nih.gov/",
+                    },
+                    {
+                        "name": "FAERS",
+                        "type": "safety",
+                        "url": "https://www.fda.gov/drugs/drug-approvals-and-databases/fda-adverse-event-reporting-system-faers",
+                    },
+                    {"name": "MyChem.info", "type": "orphan-drugs", "url": "https://mychem.info/"},
+                    {"name": "NADAC/CMS", "type": "pricing", "url": "https://data.medicaid.gov/"},
+                    {
+                        "name": "Open Targets",
+                        "type": "targets",
+                        "url": "https://platform.opentargets.org/",
+                    },
+                    {
+                        "name": "DailyMed (NIH/NLM)",
+                        "type": "labels",
+                        "url": "https://dailymed.nlm.nih.gov/",
+                    },
+                ],
+                "tools": tools_list,
+                "resources": [
+                    {
+                        "name": "EMA Medicines",
+                        "uri": "ema://medicines",
+                        "description": "EU Medicines database: aktuelle EMA-Zulassungen, Indikationen, Wirkstoffe",
+                        "mimeType": "application/json",
+                    },
+                ],
+                "prompts": [
+                    {
+                        "name": "drug-pipeline",
+                        "description": "Full pipeline for a drug: FDA approvals + EU status + safety + trials + publications",
+                        "arguments": [
+                            {
+                                "name": "drug_name",
+                                "description": "Drug name (brand or generic)",
+                                "required": True,
+                            },
+                        ],
+                    },
+                    {
+                        "name": "trial-search",
+                        "description": "Find clinical trials for a condition with phase/status filters",
+                        "arguments": [
+                            {
+                                "name": "condition",
+                                "description": "Medical condition to search",
+                                "required": True,
+                            },
+                            {
+                                "name": "phase",
+                                "description": "Optional phase filter (PHASE1, PHASE2, PHASE3)",
+                                "required": False,
+                            },
+                        ],
+                    },
+                    {
+                        "name": "safety-review",
+                        "description": "Safety profile for a drug: adverse events, reactions, outcomes",
+                        "arguments": [
+                            {
+                                "name": "drug_name",
+                                "description": "Drug name to analyze",
+                                "required": True,
+                            },
+                        ],
+                    },
+                ],
+            }
+        )
 
     async def handle_config_schema(request):
-        return JSONResponse({
-            "$schema": "https://json-schema.org/draft/2020-12/schema",
-            "type": "object",
-            "properties": {
-                "default_drug": {
-                    "type": "string",
-                    "title": "Standard-Wirkstoff",
-                    "default": "",
-                    "description": "Standard-Wirkstoff für Schnellabfragen",
-                    "examples": ["KEYTRUDA", "Ozempic"],
+        return JSONResponse(
+            {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                    "default_drug": {
+                        "type": "string",
+                        "title": "Standard-Wirkstoff",
+                        "default": "",
+                        "description": "Standard-Wirkstoff für Schnellabfragen",
+                        "examples": ["KEYTRUDA", "Ozempic"],
+                    },
+                    "language": {
+                        "type": "string",
+                        "title": "Sprache",
+                        "default": "en",
+                        "enum": ["en", "de"],
+                        "description": "Ausgabesprache",
+                    },
+                    "max_trials": {
+                        "type": "integer",
+                        "title": "Max Studien",
+                        "default": 10,
+                        "minimum": 1,
+                        "maximum": 100,
+                        "description": "Maximale Anzahl klinischer Studien pro Suche",
+                    },
                 },
-                "language": {
-                    "type": "string",
-                    "title": "Sprache",
-                    "default": "en",
-                    "enum": ["en", "de"],
-                    "description": "Ausgabesprache",
-                },
-                "max_trials": {
-                    "type": "integer",
-                    "title": "Max Studien",
-                    "default": 10,
-                    "minimum": 1,
-                    "maximum": 100,
-                    "description": "Maximale Anzahl klinischer Studien pro Suche",
-                },
-            },
-            "required": [],
-        })
+                "required": [],
+            }
+        )
 
     app = Starlette(
         routes=[
@@ -1057,6 +1239,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
         ],
     )
     import uvicorn
+
     config = uvicorn.Config(app, host=host, port=port)
     srv = uvicorn.Server(config)
     print(f"💊 drug-pipeline HTTP server on http://{host}:{port}/sse")
@@ -1070,9 +1253,11 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
 if __name__ == "__main__":
     if "--test" in sys.argv:
         import asyncio
+
         asyncio.run(main())
     elif "--http" in sys.argv:
         import asyncio
+
         asyncio.run(run_http(host="0.0.0.0", port=8081))
     else:
         run_stdio()

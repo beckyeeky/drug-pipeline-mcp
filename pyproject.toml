@@ -59,5 +59,9 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+"drug_pipeline/*.py" = ["E501"]
+"tests/*.py" = ["E501", "SIM102"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

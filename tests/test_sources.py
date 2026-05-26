@@ -1,16 +1,17 @@
 """Unit tests for sources.py — cache logic, validation, error handling."""
 
 import time
+
 import drug_pipeline.sources as sources
 from drug_pipeline.sources import (
-    _is_error,
-    _clear_cache,
-    _cached_fetch,
-    search_trials,
-    get_trial_detail,
+    PHASE_MAP,
     VALID_PHASES,
     VALID_STATUSES,
-    PHASE_MAP,
+    _cached_fetch,
+    _clear_cache,
+    _is_error,
+    get_trial_detail,
+    search_trials,
 )
 
 
@@ -69,12 +70,14 @@ class TestDrugInteractions:
 
     def test_invalid_drug_name_empty(self):
         from drug_pipeline.sources import get_drug_interactions
+
         result = get_drug_interactions("")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_drug_name_short(self):
         from drug_pipeline.sources import get_drug_interactions
+
         result = get_drug_interactions("A")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
@@ -82,6 +85,7 @@ class TestDrugInteractions:
     def test_drug_interactions_schema(self):
         """Verify the function returns correct schema on API call."""
         from drug_pipeline.sources import get_drug_interactions
+
         result = get_drug_interactions("aspirin")
         if result.get("status") == "ok":
             assert "label_interactions" in result
@@ -163,18 +167,21 @@ class TestCompareDrugs:
 
     def test_invalid_empty(self):
         from drug_pipeline.sources import compare_drugs
+
         result = compare_drugs("", "DrugB")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_short(self):
         from drug_pipeline.sources import compare_drugs
+
         result = compare_drugs("A", "B")
         assert result["status"] == "error"
 
     def test_valid_calls_ok_schema(self):
         """Happy path returns correct schema (may fail API but schema is right)."""
         from drug_pipeline.sources import compare_drugs
+
         result = compare_drugs("aspirin", "ibuprofen")
         if result.get("status") == "ok":
             assert "drug_a" in result
@@ -192,26 +199,29 @@ class TestPipelineLandscape:
 
     def test_invalid_short_condition(self):
         from drug_pipeline.sources import pipeline_landscape
+
         result = pipeline_landscape("AB")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_empty_condition(self):
         from drug_pipeline.sources import pipeline_landscape
+
         result = pipeline_landscape("")
         assert result["status"] == "error"
 
     def test_valid_schema(self):
         from drug_pipeline.sources import pipeline_landscape
+
         result = pipeline_landscape("type 2 diabetes", limit=5)
         if result.get("status") == "ok":
             assert "condition" in result
             assert "landscape" in result
-            l = result["landscape"]
-            assert "approved_drugs" in l
-            assert "phase_3_trials" in l
-            assert "phase_2_trials" in l
-            assert "key_mechanisms" in l
+            landscape = result["landscape"]
+            assert "approved_drugs" in landscape
+            assert "phase_3_trials" in landscape
+            assert "phase_2_trials" in landscape
+            assert "key_mechanisms" in landscape
             assert "data_sources" in result
 
 
@@ -220,17 +230,20 @@ class TestUsOrphanDesignations:
 
     def test_invalid_empty(self):
         from drug_pipeline.sources import get_us_orphan_designations
+
         result = get_us_orphan_designations("")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_short(self):
         from drug_pipeline.sources import get_us_orphan_designations
+
         result = get_us_orphan_designations("X")
         assert result["status"] == "error"
 
     def test_valid_schema(self):
         from drug_pipeline.sources import get_us_orphan_designations
+
         result = get_us_orphan_designations("vigabatrin")
         if result.get("status") == "ok":
             if result.get("found"):
@@ -247,17 +260,20 @@ class TestDrugPricing:
 
     def test_invalid_empty(self):
         from drug_pipeline.sources import get_drug_pricing
+
         result = get_drug_pricing("")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_short(self):
         from drug_pipeline.sources import get_drug_pricing
+
         result = get_drug_pricing("A")
         assert result["status"] == "error"
 
     def test_valid_schema(self):
         from drug_pipeline.sources import get_drug_pricing
+
         result = get_drug_pricing("atorvastatin")
         if result.get("status") == "ok" and result.get("found"):
             assert "products" in result
@@ -273,6 +289,7 @@ class TestListBiosimilars:
 
     def test_all_biosimilars(self):
         from drug_pipeline.sources import list_biosimilars
+
         result = list_biosimilars(limit=5)
         if result.get("status") == "ok":
             assert "drugs" in result
@@ -281,6 +298,7 @@ class TestListBiosimilars:
 
     def test_filter_by_condition(self):
         from drug_pipeline.sources import list_biosimilars
+
         result = list_biosimilars(condition="arthritis", limit=10)
         if result.get("status") == "ok":
             assert "condition_filter" in result
@@ -288,6 +306,7 @@ class TestListBiosimilars:
 
     def test_biosimilar_entry_schema(self):
         from drug_pipeline.sources import list_biosimilars
+
         result = list_biosimilars(limit=5)
         if result.get("status") == "ok" and result["drugs"]:
             d = result["drugs"][0]
@@ -301,6 +320,7 @@ class TestLossOfExclusivity:
 
     def test_valid_schema(self):
         from drug_pipeline.sources import list_loss_of_exclusivity
+
         result = list_loss_of_exclusivity(limit=5)
         if result.get("status") == "ok":
             assert "loss_of_exclusivity_entries" in result
@@ -313,17 +333,20 @@ class TestTrialSites:
 
     def test_invalid_nct_empty(self):
         from drug_pipeline.sources import get_trial_sites
+
         result = get_trial_sites("")
         assert result["status"] == "error"
         assert "INVALID" in result.get("error_code", "")
 
     def test_invalid_nct_wrong_prefix(self):
         from drug_pipeline.sources import get_trial_sites
+
         result = get_trial_sites("XYZ123456")
         assert result["status"] == "error"
 
     def test_valid_schema(self):
         from drug_pipeline.sources import get_trial_sites
+
         result = get_trial_sites("NCT03178617")
         if result.get("status") == "ok":
             assert "site_count" in result
@@ -338,17 +361,20 @@ class TestCombinationTherapies:
 
     def test_invalid_empty(self):
         from drug_pipeline.sources import detect_combination_therapies
+
         result = detect_combination_therapies("")
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_invalid_short(self):
         from drug_pipeline.sources import detect_combination_therapies
+
         result = detect_combination_therapies("A")
         assert result["status"] == "error"
 
     def test_valid_schema(self):
         from drug_pipeline.sources import detect_combination_therapies
+
         result = detect_combination_therapies("pembrolizumab", limit=5)
         if result.get("status") == "ok" and result.get("found"):
             assert "top_co_administered" in result
@@ -361,12 +387,14 @@ class TestFindInvestigators:
 
     def test_invalid_no_args(self):
         from drug_pipeline.sources import find_investigators
+
         result = find_investigators()
         assert result["status"] == "error"
         assert result["error_code"] == "INVALID_INPUT"
 
     def test_valid_by_condition(self):
         from drug_pipeline.sources import find_investigators
+
         result = find_investigators(condition="lung cancer", limit=5)
         if result.get("status") == "ok":
             if result.get("found"):
@@ -378,6 +406,7 @@ class TestFindInvestigators:
 
     def test_valid_by_drug(self):
         from drug_pipeline.sources import find_investigators
+
         result = find_investigators(drug_name="pembrolizumab", limit=5)
         if result.get("status") == "ok":
             # May be found or not — schema should be valid either way

@@ -1,7 +1,8 @@
 """Shared fixtures for drug-pipeline-mcp tests."""
 
 import pytest
-from drug_pipeline.sources import _CACHE, _ema_cache, _ema_cache_time
+
+from drug_pipeline.sources import _CACHE
 
 
 @pytest.fixture(autouse=True)
@@ -27,31 +28,22 @@ def sample_trial_data():
         "studies": [
             {
                 "protocolSection": {
-                    "identificationModule": {
-                        "nctId": "NCT00000000",
-                        "briefTitle": "Test Trial"
-                    },
-                    "designModule": {
-                        "phases": ["PHASE3"]
-                    },
+                    "identificationModule": {"nctId": "NCT00000000", "briefTitle": "Test Trial"},
+                    "designModule": {"phases": ["PHASE3"]},
                     "statusModule": {
                         "overallStatus": "RECRUITING",
                         "startDateStruct": {"date": "2024-01"},
-                        "completionDateStruct": {"date": "2026-12"}
+                        "completionDateStruct": {"date": "2026-12"},
                     },
-                    "conditionsModule": {
-                        "conditions": ["Test Condition"]
-                    },
-                    "sponsorCollaboratorsModule": {
-                        "leadSponsor": {"name": "Test Sponsor"}
-                    },
+                    "conditionsModule": {"conditions": ["Test Condition"]},
+                    "sponsorCollaboratorsModule": {"leadSponsor": {"name": "Test Sponsor"}},
                     "armsInterventionsModule": {
                         "interventions": [{"name": "Test Drug", "type": "DRUG"}]
-                    }
+                    },
                 }
             }
         ],
-        "nextPageToken": None
+        "nextPageToken": None,
     }
 
 
@@ -66,7 +58,7 @@ def sample_drug_result():
                 "labeler_name": "Test Pharma",
                 "active_ingredients": [{"name": "testdrug", "strength": "10 mg"}],
                 "product_ndc": "00000-0000",
-                "route": "ORAL"
+                "route": "ORAL",
             }
         ]
     }

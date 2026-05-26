@@ -4,15 +4,14 @@ Drug Pipeline MCP — Data Sources Layer.
 All data source fetchers. Every function returns raw structured data.
 No hallucination — every result traces to a source API.
 """
-from __future__ import annotations
 
 import json
-import os
+import re as _re
 import time
-import urllib.request
 import urllib.parse
-from typing import Any
+import urllib.request
 from datetime import datetime
+from typing import Any
 
 # ─────────────────────────────────────────────────────────────
 # Constants
@@ -31,22 +30,20 @@ _last_call = 0.0
 # ─────────────────────────────────────────────────────────────
 
 _EMA_XLSX_PATH = "/tmp/ema_medicines.xlsx"
-_EMA_DOWNLOAD_URL = "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
+_EMA_DOWNLOAD_URL = (
+    "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
+)
 _ema_cache: list[dict] | None = None
 _ema_cache_time: float = 0.0  # timestamp of last successful load
 _EMA_CACHE_TTL: float = 86400  # 24h in seconds
-
-# Auto-refresh EMA cache on import (background pre-load)
-try:
-    _load_ema_data()
-except Exception:
-    pass  # Silent background refresh
 
 
 def _download_ema_xlsx() -> bool:
     """Download the latest EMA medicines report. Returns True on success."""
     try:
-        req = urllib.request.Request(_EMA_DOWNLOAD_URL, headers={"User-Agent": "drug-pipeline-mcp/0.1"})
+        req = urllib.request.Request(
+            _EMA_DOWNLOAD_URL, headers={"User-Agent": "drug-pipeline-mcp/0.1"}
+        )
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
         with open(_EMA_XLSX_PATH, "wb") as f:
@@ -58,7 +55,7 @@ def _download_ema_xlsx() -> bool:
 
 def _load_ema_data() -> list[dict]:
     """Lazy-load the EMA medicines index into memory.
-    
+
     Refreshes from EMA if cache is missing or older than 24h.
     On download failure, falls back to stale cache if available.
     """
@@ -85,6 +82,7 @@ def _load_ema_data() -> list[dict]:
         import openpyxl
     except ImportError:
         import logging
+
         logging.getLogger("drug_pipeline").warning(
             "openpyxl not installed — EMA data will not be available. "
             "Install with: pip install drug-pipeline-mcp or pip install openpyxl"
@@ -102,25 +100,33 @@ def _load_ema_data() -> list[dict]:
                 continue
             if not row or not row[1]:
                 continue
-            medicines.append({
-                "category": str(row[0] or "") if row[0] else None,
-                "name": str(row[1] or "") if row[1] else None,
-                "ema_product_number": str(row[2] or "") if row[2] else None,
-                "status": str(row[3] or "") if row[3] else None,
-                "opinion_status": str(row[4] or "") if row[4] else None,
-                "procedure": str(row[5] or "") if row[5] else None,
-                "inn": str(row[6] or "") if row[6] else None,
-                "active_substance": str(row[7] or "") if row[7] else None,
-                "therapeutic_area": str(row[8] or "") if row[8] else None,
-                "atc_code": str(row[11] or "") if len(row) > 11 and row[11] else None,
-                "pharma_group": str(row[13] or "") if len(row) > 13 and row[13] else None,
-                "indication": str(row[15] or "") if len(row) > 15 and row[15] else None,
-                "accelerated_assessment": str(row[16] or "") if len(row) > 16 and row[16] else None,
-                "additional_monitoring": str(row[17] or "") if len(row) > 17 and row[17] else None,
-                "biosimilar": str(row[19] or "") if len(row) > 19 and row[19] else None,
-                "conditional_approval": str(row[20] or "") if len(row) > 20 and row[20] else None,
-                "orphan": str(row[23] or "") if len(row) > 23 and row[23] else None,
-            })
+            medicines.append(
+                {
+                    "category": str(row[0] or "") if row[0] else None,
+                    "name": str(row[1] or "") if row[1] else None,
+                    "ema_product_number": str(row[2] or "") if row[2] else None,
+                    "status": str(row[3] or "") if row[3] else None,
+                    "opinion_status": str(row[4] or "") if row[4] else None,
+                    "procedure": str(row[5] or "") if row[5] else None,
+                    "inn": str(row[6] or "") if row[6] else None,
+                    "active_substance": str(row[7] or "") if row[7] else None,
+                    "therapeutic_area": str(row[8] or "") if row[8] else None,
+                    "atc_code": str(row[11] or "") if len(row) > 11 and row[11] else None,
+                    "pharma_group": str(row[13] or "") if len(row) > 13 and row[13] else None,
+                    "indication": str(row[15] or "") if len(row) > 15 and row[15] else None,
+                    "accelerated_assessment": str(row[16] or "")
+                    if len(row) > 16 and row[16]
+                    else None,
+                    "additional_monitoring": str(row[17] or "")
+                    if len(row) > 17 and row[17]
+                    else None,
+                    "biosimilar": str(row[19] or "") if len(row) > 19 and row[19] else None,
+                    "conditional_approval": str(row[20] or "")
+                    if len(row) > 20 and row[20]
+                    else None,
+                    "orphan": str(row[23] or "") if len(row) > 23 and row[23] else None,
+                }
+            )
 
         wb.close()
         _ema_cache = medicines
@@ -151,17 +157,41 @@ def _fetch(url: str, timeout: int = 15) -> dict | list | str:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read().decode("utf-8")
             ct = resp.headers.get("Content-Type", "")
-            if "application/json" in ct or url.endswith("format=json") or url.endswith("&retmode=json"):
+            if (
+                "application/json" in ct
+                or url.endswith("format=json")
+                or url.endswith("&retmode=json")
+            ):
                 return json.loads(body)
             return body
     except urllib.error.HTTPError as e:
-        return {"status": "error", "error_code": "HTTP_ERROR", "message": f"HTTP {e.code}: {e.reason}", "source": url[:80]}
+        return {
+            "status": "error",
+            "error_code": "HTTP_ERROR",
+            "message": f"HTTP {e.code}: {e.reason}",
+            "source": url[:80],
+        }
     except urllib.error.URLError as e:
-        return {"status": "error", "error_code": "NETWORK_ERROR", "message": str(e.reason), "source": url[:80]}
+        return {
+            "status": "error",
+            "error_code": "NETWORK_ERROR",
+            "message": str(e.reason),
+            "source": url[:80],
+        }
     except json.JSONDecodeError:
-        return {"status": "error", "error_code": "PARSE_ERROR", "message": "Invalid JSON response", "source": url[:80]}
+        return {
+            "status": "error",
+            "error_code": "PARSE_ERROR",
+            "message": "Invalid JSON response",
+            "source": url[:80],
+        }
     except Exception as e:
-        return {"status": "error", "error_code": "FETCH_ERROR", "message": str(e)[:200], "source": url[:80]}
+        return {
+            "status": "error",
+            "error_code": "FETCH_ERROR",
+            "message": str(e)[:200],
+            "source": url[:80],
+        }
 
 
 def _is_error(result: Any) -> bool:
@@ -221,10 +251,19 @@ PHASE_MAP = {
 VALID_PHASES = list(PHASE_MAP.keys())
 
 VALID_STATUSES = [
-    "ACTIVE_NOT_RECRUITING", "COMPLETED", "ENROLLING_BY_INVITATION",
-    "NOT_YET_RECRUITING", "RECRUITING", "SUSPENDED", "TERMINATED",
-    "WITHDRAWN", "UNKNOWN", "AVAILABLE", "NO_LONGER_AVAILABLE",
-    "TEMPORARILY_NOT_AVAILABLE", "APPROVED_FOR_MARKETING",
+    "ACTIVE_NOT_RECRUITING",
+    "COMPLETED",
+    "ENROLLING_BY_INVITATION",
+    "NOT_YET_RECRUITING",
+    "RECRUITING",
+    "SUSPENDED",
+    "TERMINATED",
+    "WITHDRAWN",
+    "UNKNOWN",
+    "AVAILABLE",
+    "NO_LONGER_AVAILABLE",
+    "TEMPORARILY_NOT_AVAILABLE",
+    "APPROVED_FOR_MARKETING",
 ]
 
 
@@ -252,7 +291,7 @@ def search_trials(
     if condition:
         params["query.cond"] = condition
     if intervention:
-        params["query.term"] = f'AREA[InterventionSearch]/{_escape(intervention)}'
+        params["query.term"] = f"AREA[InterventionSearch]/{_escape(intervention)}"
     if sponsor:
         params["query.spons"] = sponsor
 
@@ -292,22 +331,30 @@ def search_trials(
         interventions_raw = None
         arms = p.get("armsInterventionsModule", {})
         if arms:
-            interventions_raw = [i.get("name", "") for i in (arms.get("interventions", []) or []) if i.get("name")]
+            interventions_raw = [
+                i.get("name", "") for i in (arms.get("interventions", []) or []) if i.get("name")
+            ]
 
-        results.append({
-            "nct_id": id_mod.get("nctId"),
-            "title": id_mod.get("briefTitle"),
-            "phase": phases_display,
-            "phase_code": phases_raw,
-            "overall_status": overall_status,
-            "conditions": cond_mod.get("conditions", []),
-            "lead_sponsor": spons_mod.get("leadSponsor", {}).get("name"),
-            "interventions": interventions_raw,
-            "start_date": stat_mod.get("startDateStruct", {}).get("date") if "startDateStruct" in stat_mod else None,
-            "completion_date": stat_mod.get("completionDateStruct", {}).get("date") if "completionDateStruct" in stat_mod else None,
-            "source_url": f"https://clinicaltrials.gov/study/{id_mod.get('nctId')}",
-            "data_source": "clinicaltrials.gov",
-        })
+        results.append(
+            {
+                "nct_id": id_mod.get("nctId"),
+                "title": id_mod.get("briefTitle"),
+                "phase": phases_display,
+                "phase_code": phases_raw,
+                "overall_status": overall_status,
+                "conditions": cond_mod.get("conditions", []),
+                "lead_sponsor": spons_mod.get("leadSponsor", {}).get("name"),
+                "interventions": interventions_raw,
+                "start_date": stat_mod.get("startDateStruct", {}).get("date")
+                if "startDateStruct" in stat_mod
+                else None,
+                "completion_date": stat_mod.get("completionDateStruct", {}).get("date")
+                if "completionDateStruct" in stat_mod
+                else None,
+                "source_url": f"https://clinicaltrials.gov/study/{id_mod.get('nctId')}",
+                "data_source": "clinicaltrials.gov",
+            }
+        )
 
     return {
         "status": "ok",
@@ -321,7 +368,11 @@ def search_trials(
 def get_trial_detail(nct_id: str) -> dict:
     """Get full protocol detail for a specific clinical trial by NCT ID."""
     if not nct_id or not nct_id.startswith("NCT"):
-        return {"status": "error", "error_code": "INVALID_NCT", "message": f"Invalid NCT ID: {nct_id}. Must start with 'NCT'."}
+        return {
+            "status": "error",
+            "error_code": "INVALID_NCT",
+            "message": f"Invalid NCT ID: {nct_id}. Must start with 'NCT'.",
+        }
 
     url = f"{_CLINICALTRIALS_BASE}/studies/{nct_id}?format=json"
     data = _fetch(url)
@@ -359,38 +410,60 @@ def get_trial_detail(nct_id: str) -> dict:
         "lead_sponsor": spons_mod.get("leadSponsor", {}).get("name"),
         "collaborators": [c.get("name") for c in (spons_mod.get("collaborators", []) or [])],
         "study_type": des_mod.get("studyType"),
-        "enrollment": des_mod.get("enrollmentInfo", {}).get("count") if "enrollmentInfo" in des_mod else None,
+        "enrollment": des_mod.get("enrollmentInfo", {}).get("count")
+        if "enrollmentInfo" in des_mod
+        else None,
         "interventions": [
             {"name": i.get("name"), "type": i.get("type")}
             for i in (arms_mod.get("interventions", []) or [])
-        ] if arms_mod.get("interventions") else None,
+        ]
+        if arms_mod.get("interventions")
+        else None,
         "primary_outcomes": [
             {"measure": o.get("measure"), "time_frame": o.get("timeFrame")}
             for o in (outcome_mod.get("primaryOutcomes", []) or [])
-        ] if outcome_mod.get("primaryOutcomes") else None,
+        ]
+        if outcome_mod.get("primaryOutcomes")
+        else None,
         "secondary_outcomes": [
             {"measure": o.get("measure"), "time_frame": o.get("timeFrame")}
             for o in (outcome_mod.get("secondaryOutcomes", []) or [])
-        ] if outcome_mod.get("secondaryOutcomes") else None,
+        ]
+        if outcome_mod.get("secondaryOutcomes")
+        else None,
         "eligibility_criteria": (elig_mod.get("eligibilityCriteria", "") or "")[:2000],
         "sex": elig_mod.get("sex"),
         "min_age": elig_mod.get("minimumAge"),
         "max_age": elig_mod.get("maximumAge"),
         "healthy_volunteers": elig_mod.get("healthyVolunteers"),
         "locations": [
-            {"facility": l.get("facility"), "city": l.get("city"), "country": l.get("country")}
-            for l in (loc_mod.get("locations", []) or [])
-        ][:20] if loc_mod.get("locations") else None,
+            {
+                "facility": loc.get("facility"),
+                "city": loc.get("city"),
+                "country": loc.get("country"),
+            }
+            for loc in (loc_mod.get("locations", []) or [])
+        ][:20]
+        if loc_mod.get("locations")
+        else None,
         "start_date": (stat_mod.get("startDateStruct", {}) or {}).get("date"),
-        "primary_completion_date": (stat_mod.get("primaryCompletionDateStruct", {}) or {}).get("date"),
+        "primary_completion_date": (stat_mod.get("primaryCompletionDateStruct", {}) or {}).get(
+            "date"
+        ),
         "completion_date": (stat_mod.get("completionDateStruct", {}) or {}).get("date"),
-        "study_first_submit": (stat_mod.get("studyFirstSubmitDate", "")) if "studyFirstSubmitDate" in stat_mod else None,
+        "study_first_submit": (stat_mod.get("studyFirstSubmitDate", ""))
+        if "studyFirstSubmitDate" in stat_mod
+        else None,
         "last_update": (stat_mod.get("lastUpdatePostDateStruct", {}) or {}).get("date"),
-        "fda_regulated": (overs_mod.get("fdaRegulatedDrug", False)) if "fdaRegulatedDrug" in overs_mod else None,
+        "fda_regulated": (overs_mod.get("fdaRegulatedDrug", False))
+        if "fdaRegulatedDrug" in overs_mod
+        else None,
         "references": [
             {"citation": r.get("citation"), "pmid": r.get("pmid")}
             for r in (ref_mod.get("references", []) or [])
-        ][:10] if ref_mod.get("references") else None,
+        ][:10]
+        if ref_mod.get("references")
+        else None,
         "source_url": f"https://clinicaltrials.gov/study/{nct_id}",
         "data_source": "clinicaltrials.gov",
     }
@@ -424,18 +497,20 @@ def search_drug(name: str) -> dict:
 
     results = []
     if not _is_error(ndc_data) and isinstance(ndc_data, dict):
-        for r in (ndc_data.get("results", []) or []):
-            results.append({
-                "brand_name": r.get("brand_name"),
-                "generic_name": r.get("generic_name"),
-                "labeler": r.get("labeler_name"),
-                "active_ingredients": [
-                    {"name": i["name"], "strength": i.get("strength", "")}
-                    for i in (r.get("active_ingredients", []) or [])
-                ],
-                "product_ndc": r.get("product_ndc"),
-                "route": r.get("route"),
-            })
+        for r in ndc_data.get("results", []) or []:
+            results.append(
+                {
+                    "brand_name": r.get("brand_name"),
+                    "generic_name": r.get("generic_name"),
+                    "labeler": r.get("labeler_name"),
+                    "active_ingredients": [
+                        {"name": i["name"], "strength": i.get("strength", "")}
+                        for i in (r.get("active_ingredients", []) or [])
+                    ],
+                    "product_ndc": r.get("product_ndc"),
+                    "route": r.get("route"),
+                }
+            )
 
     # Extract RxNorm / ATC from RxNav
     atc_info = None
@@ -450,7 +525,9 @@ def search_drug(name: str) -> dict:
             atc_url = f"{_RXNORM_BASE}/rxclass/class/byDrugName.json?drugName={_escape(name)}&relaSource=ATC"
             atc_data = _fetch(atc_url)
             if not _is_error(atc_data):
-                classes = ((atc_data.get("rxclassDrugInfoList", {}) or {}).get("rxclassDrugInfo", []) or [])
+                classes = (atc_data.get("rxclassDrugInfoList", {}) or {}).get(
+                    "rxclassDrugInfo", []
+                ) or []
                 if classes:
                     cls = classes[0].get("rxclassMinConceptItem", {})
                     atc_info = {"code": cls.get("classId"), "name": cls.get("className")}
@@ -480,28 +557,45 @@ def get_fda_approvals(drug_name: str) -> dict:
         return data
 
     if not isinstance(data, dict) or "results" not in data:
-        return {"status": "ok", "results": [], "total": 0, "message": f"No FDA approvals found for '{drug_name}'"}
+        return {
+            "status": "ok",
+            "results": [],
+            "total": 0,
+            "message": f"No FDA approvals found for '{drug_name}'",
+        }
 
     apps = []
-    for r in (data.get("results", []) or []):
+    for r in data.get("results", []) or []:
         submissions = []
-        for s in (r.get("submissions", []) or []):
-            submissions.append({
-                "type": s.get("submission_type"),
-                "number": s.get("submission_number"),
-                "status": s.get("submission_status"),
-                "status_date": s.get("submission_status_date"),
-                "review_priority": s.get("review_priority"),
-                "class_code": s.get("submission_class_code_description"),
-            })
-        apps.append({
-            "application_number": r.get("application_number"),
-            "sponsor": r.get("sponsor_name"),
-            "brand_names": [p.get("brand_name") for p in (r.get("products", []) or []) if p.get("brand_name")],
-            "generic_names": [p.get("generic_name") for p in (r.get("products", []) or []) if p.get("generic_name")],
-            "submissions": submissions,
-            "source_url": f"https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo={r.get('application_number','')}",
-        })
+        for s in r.get("submissions", []) or []:
+            submissions.append(
+                {
+                    "type": s.get("submission_type"),
+                    "number": s.get("submission_number"),
+                    "status": s.get("submission_status"),
+                    "status_date": s.get("submission_status_date"),
+                    "review_priority": s.get("review_priority"),
+                    "class_code": s.get("submission_class_code_description"),
+                }
+            )
+        apps.append(
+            {
+                "application_number": r.get("application_number"),
+                "sponsor": r.get("sponsor_name"),
+                "brand_names": [
+                    p.get("brand_name")
+                    for p in (r.get("products", []) or [])
+                    if p.get("brand_name")
+                ],
+                "generic_names": [
+                    p.get("generic_name")
+                    for p in (r.get("products", []) or [])
+                    if p.get("generic_name")
+                ],
+                "submissions": submissions,
+                "source_url": f"https://www.accessdata.fda.gov/scripts/cder/daf/index.cfm?event=overview.process&ApplNo={r.get('application_number', '')}",
+            }
+        )
 
     return {
         "status": "ok",
@@ -525,7 +619,11 @@ def search_publications(query: str, max_results: int = 10) -> dict:
     Returns PMIDs, titles, journal, and publication dates.
     """
     if not query or len(query) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT", "message": "Query must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "Query must be at least 2 characters",
+        }
 
     # Step 1: ESearch — find matching PMIDs
     search_url = f"{_PUBMED_BASE}/esearch.fcgi?db=pubmed&term={urllib.parse.quote(query)}&retmax={min(max_results, 50)}&retmode=json"
@@ -555,6 +653,7 @@ def search_publications(query: str, max_results: int = 10) -> dict:
     results = []
     if xml_text:
         import re
+
         articles = re.split(r"<PubmedArticle>", xml_text)[1:]
 
         for art in articles[:max_results]:
@@ -562,14 +661,21 @@ def search_publications(query: str, max_results: int = 10) -> dict:
             title_match = re.search(r"<ArticleTitle[^>]*>(.*?)</ArticleTitle>", art, re.DOTALL)
             journal_match = re.search(r"<Journal[^>]*>.*?<Title[^>]*>(.*?)</Title>", art, re.DOTALL)
             year_match = re.search(r"<PubDate[^>]*>.*?<Year[^>]*>(\d{4})", art, re.DOTALL)
-            abstract_match = re.search(r"<Abstract[^>]*>.*?<AbstractText[^>]*>(.*?)</AbstractText>", art, re.DOTALL)
+            abstract_match = re.search(
+                r"<Abstract[^>]*>.*?<AbstractText[^>]*>(.*?)</AbstractText>", art, re.DOTALL
+            )
 
             # Clean HTML entities
             def clean(s):
                 if not s:
                     return None
                 s = re.sub(r"<[^>]+>", "", s)
-                s = s.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", '"')
+                s = (
+                    s.replace("&amp;", "&")
+                    .replace("&lt;", "<")
+                    .replace("&gt;", ">")
+                    .replace("&quot;", '"')
+                )
                 return s[:300] if s else None
 
             pmid = clean(pmid_match.group(1)) if pmid_match else None
@@ -579,14 +685,16 @@ def search_publications(query: str, max_results: int = 10) -> dict:
             abstract = clean(abstract_match.group(1)) if abstract_match else None
 
             if pmid:
-                results.append({
-                    "pmid": pmid,
-                    "title": title,
-                    "journal": journal,
-                    "year": year,
-                    "abstract": abstract,
-                    "source_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                })
+                results.append(
+                    {
+                        "pmid": pmid,
+                        "title": title,
+                        "journal": journal,
+                        "year": year,
+                        "abstract": abstract,
+                        "source_url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    }
+                )
 
     return {
         "status": "ok",
@@ -613,17 +721,24 @@ def get_eu_approvals(drug_name: str) -> dict:
     and special designations (orphan, biosimilar, conditional approval).
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     name_lower = drug_name.lower()
     ema_data = _load_ema_data()
 
     if not ema_data:
-        return {"status": "ok", "drug_name": drug_name,
-                "results": [], "total": 0,
-                "message": "EMA data not available. Try again or check /tmp/ema_medicines.xlsx",
-                "data_source": "EMA"}
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "results": [],
+            "total": 0,
+            "message": "EMA data not available. Try again or check /tmp/ema_medicines.xlsx",
+            "data_source": "EMA",
+        }
 
     results = []
     for med in ema_data:
@@ -632,23 +747,27 @@ def get_eu_approvals(drug_name: str) -> dict:
         subst = (med.get("active_substance") or "").lower()
 
         if name_lower in name or name_lower in inn or name_lower in subst:
-            results.append({
-                "brand_name": med.get("name"),
-                "ema_product_number": med.get("ema_product_number"),
-                "status": med.get("status"),
-                "inn": med.get("inn"),
-                "active_substance": med.get("active_substance"),
-                "atc_code": med.get("atc_code"),
-                "therapeutic_area": med.get("therapeutic_area"),
-                "pharma_group": med.get("pharma_group"),
-                "indication": (med.get("indication") or "")[:300],
-                "additional_monitoring": med.get("additional_monitoring") == "Yes",
-                "biosimilar": med.get("biosimilar") == "Yes",
-                "conditional_approval": med.get("conditional_approval") == "Yes",
-                "orphan": med.get("orphan") == "Yes",
-                "accelerated_assessment": med.get("accelerated_assessment") == "Yes",
-                "source_url": f"https://www.ema.europa.eu/en/medicines/human/EPAR/{med.get('name', '').lower().replace(' (previously ', '-').replace(' ', '-').split(',')[0].strip('-')}" if med.get("name") else None,
-            })
+            results.append(
+                {
+                    "brand_name": med.get("name"),
+                    "ema_product_number": med.get("ema_product_number"),
+                    "status": med.get("status"),
+                    "inn": med.get("inn"),
+                    "active_substance": med.get("active_substance"),
+                    "atc_code": med.get("atc_code"),
+                    "therapeutic_area": med.get("therapeutic_area"),
+                    "pharma_group": med.get("pharma_group"),
+                    "indication": (med.get("indication") or "")[:300],
+                    "additional_monitoring": med.get("additional_monitoring") == "Yes",
+                    "biosimilar": med.get("biosimilar") == "Yes",
+                    "conditional_approval": med.get("conditional_approval") == "Yes",
+                    "orphan": med.get("orphan") == "Yes",
+                    "accelerated_assessment": med.get("accelerated_assessment") == "Yes",
+                    "source_url": f"https://www.ema.europa.eu/en/medicines/human/EPAR/{med.get('name', '').lower().replace(' (previously ', '-').replace(' ', '-').split(',')[0].strip('-')}"
+                    if med.get("name")
+                    else None,
+                }
+            )
 
     return {
         "status": "ok",
@@ -679,8 +798,11 @@ def get_safety_data(drug_name: str) -> dict:
     and serious outcome breakdown (death, hospitalization, etc.).
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     # 1. Total reports + serious outcomes
     search_term = urllib.parse.quote(drug_name)
@@ -707,7 +829,7 @@ def get_safety_data(drug_name: str) -> dict:
     count_data = _fetch(count_url)
     top_reactions = []
     if not _is_error(count_data) and isinstance(count_data, dict):
-        for r in (count_data.get("results", []) or []):
+        for r in count_data.get("results", []) or []:
             top_reactions.append({"reaction": r.get("term"), "count": r.get("count")})
 
     # 3. Serious outcomes breakdown
@@ -715,7 +837,7 @@ def get_safety_data(drug_name: str) -> dict:
     serious_data = _fetch(serious_url)
     serious_outcomes = {}
     if not _is_error(serious_data) and isinstance(serious_data, dict):
-        for r in (serious_data.get("results", []) or []):
+        for r in serious_data.get("results", []) or []:
             key = r.get("term", "unknown")
             label = {"1": "Serious (any)", "2": "Not serious"}.get(key, key)
             serious_outcomes[label] = r.get("count")
@@ -733,12 +855,10 @@ def get_safety_data(drug_name: str) -> dict:
     }
 
 
-
+# ═════════════════════════════════════════════════════════════
 # ═════════════════════════════════════════════════════════════
 # 6. Indication → Drug — Therapien per Indikation finden
 # ═════════════════════════════════════════════════════════════
-
-import re as _re
 
 
 def _tokenize(text: str) -> set[str]:
@@ -751,25 +871,25 @@ def _tokenize(text: str) -> set[str]:
 def _condition_match_score(query_tokens: set[str], area: str) -> float:
     """
     Compute a match score between query tokens and a therapeutic area string.
-    
+
     Returns 0.0-1.0. Uses token overlap with synonym expansion and
     boosting for significant words.
     """
     if not query_tokens or not area:
         return 0.0
-    
+
     area_tokens = _tokenize(area)
     if not area_tokens:
         return 0.0
 
     # Expand query with medical synonyms
     expanded = _expand_tokens(query_tokens)
-    
+
     # Check overlap with both original and expanded tokens
     overlap = (query_tokens & area_tokens) or (expanded & area_tokens)
     if not overlap:
         return 0.0
-    
+
     # Score based on matched portion — use the larger set
     matched_tokens = query_tokens & area_tokens
     if not matched_tokens:
@@ -778,12 +898,12 @@ def _condition_match_score(query_tokens: set[str], area: str) -> float:
         score = len(matched_tokens) / (len(query_tokens) + 0.5)
     else:
         score = len(overlap) / len(query_tokens)
-    
+
     avg_query_len = sum(len(t) for t in query_tokens) / len(query_tokens) if query_tokens else 1
     avg_overlap_len = sum(len(t) for t in overlap) / len(overlap) if overlap else 1
     if avg_overlap_len >= avg_query_len:
         score *= 1.2
-    
+
     return min(score, 1.0)
 
 
@@ -823,19 +943,29 @@ def approved_for_condition(condition: str, limit: int = 30) -> dict:
     ATC codes, and authorization status.
     """
     if not condition or len(condition) < 3:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "condition must be at least 3 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "condition must be at least 3 characters",
+        }
 
     query_tokens = _tokenize(condition)
     if not query_tokens:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "Could not parse condition into search tokens"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "Could not parse condition into search tokens",
+        }
 
     ema_data = _load_ema_data()
     if not ema_data:
-        return {"status": "ok", "condition": condition,
-                "results": [], "total": 0,
-                "message": "EMA data not available"}
+        return {
+            "status": "ok",
+            "condition": condition,
+            "results": [],
+            "total": 0,
+            "message": "EMA data not available",
+        }
 
     scored = []
     seen_names = set()
@@ -877,18 +1007,20 @@ def approved_for_condition(condition: str, limit: int = 30) -> dict:
 
         if combined > 0.2:
             seen_names.add(name.lower())
-            scored.append({
-                "name": name,
-                "active_substance": med.get("active_substance"),
-                "atc_code": med.get("atc_code"),
-                "status": med.get("status"),
-                "therapeutic_area": area[:120] if area else None,
-                "pharma_group": med.get("pharma_group"),
-                "indication": (indication or "")[:200],
-                "biosimilar": med.get("biosimilar") == "Yes",
-                "orphan": med.get("orphan") == "Yes",
-                "score": round(combined, 2),
-            })
+            scored.append(
+                {
+                    "name": name,
+                    "active_substance": med.get("active_substance"),
+                    "atc_code": med.get("atc_code"),
+                    "status": med.get("status"),
+                    "therapeutic_area": area[:120] if area else None,
+                    "pharma_group": med.get("pharma_group"),
+                    "indication": (indication or "")[:200],
+                    "biosimilar": med.get("biosimilar") == "Yes",
+                    "orphan": med.get("orphan") == "Yes",
+                    "score": round(combined, 2),
+                }
+            )
 
     scored.sort(key=lambda x: (-x["score"], x["name"]))
 
@@ -910,6 +1042,7 @@ def approved_for_condition(condition: str, limit: int = 30) -> dict:
         "timestamp": datetime.utcnow().isoformat(),
     }
 
+
 def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = None) -> dict:
     """
     Composite intelligence: given a drug name OR condition, returns:
@@ -920,8 +1053,11 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
     This is the primary AX tool — saves agents 3+ API calls.
     """
     if not drug_name and not condition:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "Provide at least one of: drug_name or condition"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "Provide at least one of: drug_name or condition",
+        }
 
     drug_info = None
     approvals = None
@@ -965,14 +1101,19 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         if eu_data.get("status") == "ok" and eu_data.get("results"):
             eu_approvals = {
                 "total": eu_data["total"],
-                "results": [{
-                    "brand_name": r["brand_name"],
-                    "status": r["status"],
-                    "atc_code": r["atc_code"],
-                    "therapeutic_area": r["therapeutic_area"],
-                    "orphan": r["orphan"],
-                    "biosimilar": r["biosimilar"],
-                } for r in eu_data["results"][:5]] if eu_data.get("results") else [],
+                "results": [
+                    {
+                        "brand_name": r["brand_name"],
+                        "status": r["status"],
+                        "atc_code": r["atc_code"],
+                        "therapeutic_area": r["therapeutic_area"],
+                        "orphan": r["orphan"],
+                        "biosimilar": r["biosimilar"],
+                    }
+                    for r in eu_data["results"][:5]
+                ]
+                if eu_data.get("results")
+                else [],
             }
             sources_used.append("EMA")
 
@@ -1001,11 +1142,14 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         if afc_data.get("status") == "ok" and afc_data.get("results"):
             condition_drugs = {
                 "total_approved": afc_data["total"],
-                "top_matches": [{
-                    "name": r["name"],
-                    "atc_code": r["atc_code"],
-                    "orphan": r["orphan"],
-                } for r in afc_data["results"][:8]],
+                "top_matches": [
+                    {
+                        "name": r["name"],
+                        "atc_code": r["atc_code"],
+                        "orphan": r["orphan"],
+                    }
+                    for r in afc_data["results"][:8]
+                ],
             }
             sources_used.append("EMA")
 
@@ -1028,13 +1172,16 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         if recall_data.get("status") == "ok" and recall_data.get("recalls"):
             recalls = {
                 "total_recalls": recall_data["total_recalls"],
-                "recent": [{
-                    "date": r.get("recall_initiation_date"),
-                    "reason": (r.get("reason_for_recall", "") or "")[:200],
-                    "classification": r.get("classification"),
-                    "status": r.get("status"),
-                    "firm": r.get("recalling_firm"),
-                } for r in recall_data["recalls"][:5]],
+                "recent": [
+                    {
+                        "date": r.get("recall_initiation_date"),
+                        "reason": (r.get("reason_for_recall", "") or "")[:200],
+                        "classification": r.get("classification"),
+                        "status": r.get("status"),
+                        "firm": r.get("recalling_firm"),
+                    }
+                    for r in recall_data["recalls"][:5]
+                ],
             }
             sources_used.append("openFDA Enforcement")
 
@@ -1045,12 +1192,15 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         if signal_data.get("status") == "ok" and signal_data.get("signals"):
             safety_signals = {
                 "total_signals": signal_data["total_signals"],
-                "top_signals": [{
-                    "reaction": s.get("reaction"),
-                    "prr": round(s.get("prr", 0), 2),
-                    "reports": s.get("reports_with_drug", 0),
-                    "signal_strength": s.get("signal_strength"),
-                } for s in signal_data["signals"][:5]],
+                "top_signals": [
+                    {
+                        "reaction": s.get("reaction"),
+                        "prr": round(s.get("prr", 0), 2),
+                        "reports": s.get("reports_with_drug", 0),
+                        "signal_strength": s.get("signal_strength"),
+                    }
+                    for s in signal_data["signals"][:5]
+                ],
             }
             sources_used.append("openFDA FAERS")
 
@@ -1075,8 +1225,14 @@ def drug_pipeline_summary(drug_name: str | None = None, condition: str | None = 
         interaction_data = get_drug_interactions(drug_name)
         if interaction_data.get("status") == "ok":
             drug_interactions = {
-                "has_label_interactions": interaction_data["label_interactions"].get("drug_interactions_text") is not None,
-                "contraindications_available": interaction_data["label_interactions"].get("contraindications_text") is not None,
+                "has_label_interactions": interaction_data["label_interactions"].get(
+                    "drug_interactions_text"
+                )
+                is not None,
+                "contraindications_available": interaction_data["label_interactions"].get(
+                    "contraindications_text"
+                )
+                is not None,
                 "co_reported_in_faers": interaction_data.get("co_reported_in_faers", [])[:3],
                 "total_co_reported": interaction_data.get("total_co_reported", 0),
             }
@@ -1122,8 +1278,11 @@ def get_trial_results(nct_id: str) -> dict:
     Results are embedded in the study record on ClinicalTrials.gov.
     """
     if not nct_id or not nct_id.startswith("NCT"):
-        return {"status": "error", "error_code": "INVALID_NCT",
-                "message": f"Invalid NCT ID: {nct_id}. Must start with 'NCT'."}
+        return {
+            "status": "error",
+            "error_code": "INVALID_NCT",
+            "message": f"Invalid NCT ID: {nct_id}. Must start with 'NCT'.",
+        }
 
     url = f"{_CLINICALTRIALS_BASE}/studies/{nct_id}?format=json"
     data = _fetch(url)
@@ -1137,13 +1296,14 @@ def get_trial_results(nct_id: str) -> dict:
     # Check if results exist
     results_section = data.get("resultsSection", {})
     if not results_section:
-        id_mod = data.get("protocolSection", {}).get("identificationModule", {})
-        return {"status": "ok",
-                "nct_id": nct_id,
-                "has_results": False,
-                "message": f"No results posted yet for {nct_id}. The trial may still be ongoing or results haven't been submitted.",
-                "source_url": f"https://clinicaltrials.gov/study/{nct_id}",
-                "data_source": "clinicaltrials.gov"}
+        return {
+            "status": "ok",
+            "nct_id": nct_id,
+            "has_results": False,
+            "message": f"No results posted yet for {nct_id}. The trial may still be ongoing or results haven't been submitted.",
+            "source_url": f"https://clinicaltrials.gov/study/{nct_id}",
+            "data_source": "clinicaltrials.gov",
+        }
 
     outcome_module = results_section.get("outcomeMeasuresModule", {}) or {}
     baseline_module = results_section.get("baselineCharacteristicsModule", {}) or {}
@@ -1153,90 +1313,115 @@ def get_trial_results(nct_id: str) -> dict:
 
     # Parse outcome measures
     outcomes = []
-    for om in (outcome_module.get("outcomeMeasures", []) or []):
+    for om in outcome_module.get("outcomeMeasures", []) or []:
         classes_data = []
-        for cls in (om.get("classes", []) or []):
+        for cls in om.get("classes", []) or []:
             categories = []
-            for cat in (cls.get("categories", []) or []):
+            for cat in cls.get("categories", []) or []:
                 measurements = []
-                for m in (cat.get("measurements", []) or []):
-                    measurements.append({
-                        "group": m.get("groupDescription"),
-                        "value": m.get("value"),
-                        "spread": m.get("spread"),
-                        "unit": m.get("unit"),
-                    })
-                categories.append({
-                    "title": cat.get("title"),
-                    "measurements": measurements,
-                })
-            classes_data.append({
-                "title": cls.get("title"),
-                "categories": categories,
-            })
-        outcomes.append({
-            "title": om.get("title"),
-            "type": om.get("type"),
-            "time_frame": om.get("timeFrame"),
-            "description": (om.get("description") or "")[:300],
-            "population": om.get("populationDescription"),
-            "classes": classes_data,
-        })
+                for m in cat.get("measurements", []) or []:
+                    measurements.append(
+                        {
+                            "group": m.get("groupDescription"),
+                            "value": m.get("value"),
+                            "spread": m.get("spread"),
+                            "unit": m.get("unit"),
+                        }
+                    )
+                categories.append(
+                    {
+                        "title": cat.get("title"),
+                        "measurements": measurements,
+                    }
+                )
+            classes_data.append(
+                {
+                    "title": cls.get("title"),
+                    "categories": categories,
+                }
+            )
+        outcomes.append(
+            {
+                "title": om.get("title"),
+                "type": om.get("type"),
+                "time_frame": om.get("timeFrame"),
+                "description": (om.get("description") or "")[:300],
+                "population": om.get("populationDescription"),
+                "classes": classes_data,
+            }
+        )
 
     # Parse baseline
     baseline_groups = []
-    for g in (baseline_module.get("denomGroups", []) or []):
-        baseline_groups.append({
-            "description": g.get("description", ""),
-            "count": (g.get("denomCount", {}) or {}).get("value"),
-        })
+    for g in baseline_module.get("denomGroups", []) or []:
+        baseline_groups.append(
+            {
+                "description": g.get("description", ""),
+                "count": (g.get("denomCount", {}) or {}).get("value"),
+            }
+        )
     baseline_measures = []
-    for m in (baseline_module.get("measures", []) or []):
-        baseline_measures.append({
-            "title": m.get("title"),
-            "description": (m.get("description") or "")[:200],
-        })
+    for m in baseline_module.get("measures", []) or []:
+        baseline_measures.append(
+            {
+                "title": m.get("title"),
+                "description": (m.get("description") or "")[:200],
+            }
+        )
 
     # Parse adverse events
     serious_events = []
-    for e in (ae_module.get("seriousEvents", []) or []):
-        serious_events.append({
-            "term": e.get("term"),
-            "organ_system": e.get("organSystem"),
-            "subjects_affected": e.get("subjectsAffected"),
-            "subjects_at_risk": e.get("subjectsAtRisk"),
-        })
+    for e in ae_module.get("seriousEvents", []) or []:
+        serious_events.append(
+            {
+                "term": e.get("term"),
+                "organ_system": e.get("organSystem"),
+                "subjects_affected": e.get("subjectsAffected"),
+                "subjects_at_risk": e.get("subjectsAtRisk"),
+            }
+        )
     other_events = []
-    for e in (ae_module.get("otherEvents", []) or []):
-        other_events.append({
-            "term": e.get("term"),
-            "organ_system": e.get("organSystem"),
-            "subjects_affected": e.get("subjectsAffected"),
-            "subjects_at_risk": e.get("subjectsAtRisk"),
-        })
+    for e in ae_module.get("otherEvents", []) or []:
+        other_events.append(
+            {
+                "term": e.get("term"),
+                "organ_system": e.get("organSystem"),
+                "subjects_affected": e.get("subjectsAffected"),
+                "subjects_at_risk": e.get("subjectsAtRisk"),
+            }
+        )
 
     # Participant flow
     flow_groups = []
-    for g in (flow_module.get("denomGroups", []) or []):
-        flow_groups.append({
-            "description": g.get("description", ""),
-            "count": (g.get("denomCount", {}) or {}).get("value"),
-        })
+    for g in flow_module.get("denomGroups", []) or []:
+        flow_groups.append(
+            {
+                "description": g.get("description", ""),
+                "count": (g.get("denomCount", {}) or {}).get("value"),
+            }
+        )
     flow_periods = []
-    for p in (flow_module.get("periods", []) or []):
+    for p in flow_module.get("periods", []) or []:
         milestones = []
-        for m in (p.get("milestones", []) or []):
-            milestones.append({
-                "description": m.get("description"),
-                "participants": [{
-                    "group": d.get("groupDescription"),
-                    "count": d.get("count"),
-                } for d in (m.get("denoms", []) or [])],
-            })
-        flow_periods.append({
-            "title": p.get("title"),
-            "milestones": milestones,
-        })
+        for m in p.get("milestones", []) or []:
+            milestones.append(
+                {
+                    "description": m.get("description"),
+                    "participants": [
+                        {
+                            "group": d.get("groupDescription"),
+                            "count": d.get("count"),
+                        }
+                        for d in (m.get("denoms", []) or [])
+                    ],
+                }
+            )
+        flow_periods.append(
+            {
+                "title": p.get("title"),
+                "milestones": milestones,
+            }
+        )
 
     # Limitations and caveats
     limitations = None
@@ -1288,8 +1473,7 @@ def list_orphan_drugs(condition: str | None = None, limit: int = 50) -> dict:
     """
     ema_data = _load_ema_data()
     if not ema_data:
-        return {"status": "ok", "results": [], "total": 0,
-                "message": "EMA data not available"}
+        return {"status": "ok", "results": [], "total": 0, "message": "EMA data not available"}
 
     query_tokens = _tokenize(condition) if condition else None
     results = []
@@ -1313,14 +1497,16 @@ def list_orphan_drugs(condition: str | None = None, limit: int = 50) -> dict:
             if area_score < 0.3:
                 continue
 
-        results.append({
-            "name": name,
-            "active_substance": med.get("active_substance"),
-            "atc_code": med.get("atc_code"),
-            "therapeutic_area": area[:120] if area else None,
-            "indication": (indication or "")[:200],
-            "ema_product_number": med.get("ema_product_number"),
-        })
+        results.append(
+            {
+                "name": name,
+                "active_substance": med.get("active_substance"),
+                "atc_code": med.get("atc_code"),
+                "therapeutic_area": area[:120] if area else None,
+                "indication": (indication or "")[:200],
+                "ema_product_number": med.get("ema_product_number"),
+            }
+        )
 
     # Deduplicate by active substance
     by_substance: dict[str, dict] = {}
@@ -1357,8 +1543,11 @@ def company_pipeline(company_name: str, include_eu: bool = True, limit: int = 30
     status for drugs found in trials.
     """
     if not company_name or len(company_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "company_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "company_name must be at least 2 characters",
+        }
 
     # 1. Search trials by sponsor
     trials_raw = search_trials(sponsor=company_name, limit=100)
@@ -1367,33 +1556,49 @@ def company_pipeline(company_name: str, include_eu: bool = True, limit: int = 30
 
     trials = trials_raw.get("results", [])
     if not trials:
-        return {"status": "ok", "company": company_name,
-                "results": [], "total": 0,
-                "message": f"No clinical trials found for sponsor '{company_name}'",
-                "data_source": "clinicaltrials.gov"}
+        return {
+            "status": "ok",
+            "company": company_name,
+            "results": [],
+            "total": 0,
+            "message": f"No clinical trials found for sponsor '{company_name}'",
+            "data_source": "clinicaltrials.gov",
+        }
 
     # 2. Group by phase
     by_phase: dict[str, list[dict]] = {}
     for t in trials:
-        for phase_code in (t.get("phase_code", []) or ["NA"]):
+        for phase_code in t.get("phase_code", []) or ["NA"]:
             by_phase.setdefault(phase_code, []).append(t)
 
     # 3. Build phase summary
     phase_summary = {}
-    for phase_code in ["PHASE1", "PHASE12", "PHASE2", "PHASE23", "PHASE3", "PHASE4", "EARLY1", "NA"]:
+    for phase_code in [
+        "PHASE1",
+        "PHASE12",
+        "PHASE2",
+        "PHASE23",
+        "PHASE3",
+        "PHASE4",
+        "EARLY1",
+        "NA",
+    ]:
         phase_key = PHASE_MAP.get(phase_code, phase_code)
         matched = by_phase.get(phase_code, [])
         if matched:
             phase_summary[phase_key] = {
                 "count": len(matched),
-                "studies": [{
-                    "nct_id": s["nct_id"],
-                    "title": s["title"],
-                    "status": s.get("overall_status"),
-                    "conditions": s.get("conditions", []),
-                    "interventions": s.get("interventions"),
-                    "source_url": s.get("source_url"),
-                } for s in matched[:15]],
+                "studies": [
+                    {
+                        "nct_id": s["nct_id"],
+                        "title": s["title"],
+                        "status": s.get("overall_status"),
+                        "conditions": s.get("conditions", []),
+                        "interventions": s.get("interventions"),
+                        "source_url": s.get("source_url"),
+                    }
+                    for s in matched[:15]
+                ],
             }
 
     # 4. Extract drug names from trial interventions for EU lookup
@@ -1421,8 +1626,12 @@ def company_pipeline(company_name: str, include_eu: bool = True, limit: int = 30
         "trial_count": len(trials),
         "phase_summary": phase_summary,
         "eu_approvals": eu_status,
-        "active_trials": sum(1 for t in trials if t.get("overall_status") in
-                             ("RECRUITING", "ACTIVE_NOT_RECRUITING", "ENROLLING_BY_INVITATION")),
+        "active_trials": sum(
+            1
+            for t in trials
+            if t.get("overall_status")
+            in ("RECRUITING", "ACTIVE_NOT_RECRUITING", "ENROLLING_BY_INVITATION")
+        ),
         "completed_trials": sum(1 for t in trials if t.get("overall_status") == "COMPLETED"),
         "data_source": "clinicaltrials.gov, EMA",
         "timestamp": datetime.utcnow().isoformat(),
@@ -1448,8 +1657,11 @@ def get_drug_label(drug_name: str) -> dict:
     under an FDA application. Use brand-name OTC products for best results.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     search_term = _escape(drug_name)
     _rate_limited()
@@ -1519,8 +1731,11 @@ def get_recalls(drug_name: str) -> dict:
     product_quantity, classification (Class I/II/III), status, recalling_firm.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     search_term = _escape(drug_name)
     url = f"{_FDA_BASE}/drug/enforcement.json?search=openfda.brand_name:{search_term}&limit=20"
@@ -1531,17 +1746,19 @@ def get_recalls(drug_name: str) -> dict:
 
     recalls = []
     if isinstance(data, dict) and "results" in data:
-        for r in (data.get("results", []) or []):
-            recalls.append({
-                "recall_initiation_date": r.get("recall_initiation_date"),
-                "reason_for_recall": r.get("reason_for_recall"),
-                "product_quantity": r.get("product_quantity"),
-                "classification": r.get("classification"),
-                "status": r.get("status"),
-                "recalling_firm": r.get("recalling_firm"),
-                "product_description": r.get("product_description"),
-                "code_info": r.get("code_info"),
-            })
+        for r in data.get("results", []) or []:
+            recalls.append(
+                {
+                    "recall_initiation_date": r.get("recall_initiation_date"),
+                    "reason_for_recall": r.get("reason_for_recall"),
+                    "product_quantity": r.get("product_quantity"),
+                    "classification": r.get("classification"),
+                    "status": r.get("status"),
+                    "recalling_firm": r.get("recalling_firm"),
+                    "product_description": r.get("product_description"),
+                    "code_info": r.get("code_info"),
+                }
+            )
 
     return {
         "status": "ok",
@@ -1561,28 +1778,29 @@ def get_recalls(drug_name: str) -> dict:
 
 def _resolve_faers_brand(drug_name: str, safety_data: dict) -> tuple[str, dict]:
     """Resolve brand name aliasing for FAERS queries.
-    
+
     If the initial drug name yields fewer than 10,000 FAERS reports,
     try to find brand names (via openFDA) that may have more reports
     filed under them. Returns (best_name, safety_data)."""
     best_name = drug_name
     best_safety = safety_data
     best_reports = safety_data.get("total_reports", 0)
-    
+
     # Only bother if reports are low — suggests generic name with poor FAERS coverage
     if best_reports >= 10000:
         return best_name, best_safety
-    
+
     # Try to find brand name aliases via FDA approvals data
     try:
         import urllib.parse as _up
+
         search_term = _up.quote(drug_name)
         url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=3"
         data = _cached_fetch(url, ttl=600)
         if not _is_error(data) and isinstance(data, dict):
             brands_seen = set()
-            for r in (data.get("results", []) or []):
-                for p in (r.get("products", []) or []):
+            for r in data.get("results", []) or []:
+                for p in r.get("products", []) or []:
                     bn = p.get("brand_name", "")
                     if bn and bn.lower() not in brands_seen and bn.lower() != drug_name.lower():
                         brands_seen.add(bn.lower())
@@ -1590,7 +1808,9 @@ def _resolve_faers_brand(drug_name: str, safety_data: dict) -> tuple[str, dict]:
                         brand_url = f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{_up.quote(bn)}&limit=1"
                         bdata = _fetch(brand_url)
                         if not _is_error(bdata) and isinstance(bdata, dict):
-                            total = (bdata.get("meta", {}).get("results", {}) or {}).get("total", 0) or 0
+                            total = (bdata.get("meta", {}).get("results", {}) or {}).get(
+                                "total", 0
+                            ) or 0
                             if total > best_reports:
                                 best_reports = total
                                 best_name = bn
@@ -1598,7 +1818,7 @@ def _resolve_faers_brand(drug_name: str, safety_data: dict) -> tuple[str, dict]:
                                 best_safety = get_safety_data(bn)
     except Exception:
         pass  # If brand resolution fails, fall back to original name
-    
+
     return best_name, best_safety
 
 
@@ -1618,8 +1838,11 @@ def detect_safety_signals(drug_name: str) -> dict:
     Returns reactions ranked by PRR where PRR > 1 as signals.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     # Step 1: Get FAERS data for this drug
     safety = get_safety_data(drug_name)
@@ -1645,7 +1868,9 @@ def detect_safety_signals(drug_name: str) -> dict:
 
     # Step 2: Get background total (all drugs in FAERS)
     search_term = _escape(drug_name)
-    background_url = f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{search_term}&limit=1"
+    background_url = (
+        f"{_FDA_BASE}/drug/event.json?search=patient.drug.medicinalproduct:{search_term}&limit=1"
+    )
     bg_data = _fetch(background_url)
 
     if _is_error(bg_data):
@@ -1681,7 +1906,7 @@ def detect_safety_signals(drug_name: str) -> dict:
         c = 0
         if not _is_error(reaction_data) and isinstance(reaction_data, dict):
             all_reaction_reports = 0
-            for r in (reaction_data.get("results", []) or []):
+            for r in reaction_data.get("results", []) or []:
                 all_reaction_reports += r.get("count", 0) or 0
             # c = reports for other drugs with this reaction = total all drugs - this drug
             c = max(0, all_reaction_reports - a)
@@ -1700,20 +1925,19 @@ def detect_safety_signals(drug_name: str) -> dict:
         else:
             drug_risk = a / (a + b) if (a + b) > 0 else 0
             bg_risk = c / (c + d) if (c + d) > 0 else 0
-            if bg_risk > 0:
-                prr = drug_risk / bg_risk
-            else:
-                prr = float('inf') if drug_risk > 0 else 0.0
+            prr = drug_risk / bg_risk if bg_risk > 0 else (float("inf") if drug_risk > 0 else 0.0)
 
         # Only include signals with PRR > 1
         if prr > 1:
-            signals.append({
-                "reaction": reaction.get("reaction"),
-                "reaction_count": a,
-                "drug_total_reports": total_drug_reports,
-                "background_count_estimate": c,
-                "prr": round(prr, 2),
-            })
+            signals.append(
+                {
+                    "reaction": reaction.get("reaction"),
+                    "reaction_count": a,
+                    "drug_total_reports": total_drug_reports,
+                    "background_count_estimate": c,
+                    "prr": round(prr, 2),
+                }
+            )
 
     # Sort by PRR descending
     signals.sort(key=lambda x: x["prr"], reverse=True)
@@ -1756,11 +1980,13 @@ def get_patent_expiry(drug_name: str) -> dict:
     have been discontinued by the FDA. This implementation uses openFDA data
     as the best available alternative for patent/exclusivity intelligence.
     """
-    import re as _re
 
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     search_term = _escape(drug_name)
     url = f"{_FDA_BASE}/drug/drugsfda.json?search=products.brand_name:{search_term}+OR+products.active_ingredients.name:{search_term}&limit=5"
@@ -1773,29 +1999,31 @@ def get_patent_expiry(drug_name: str) -> dict:
     all_submissions = []
 
     if isinstance(data, dict):
-        for r in (data.get("results", []) or []):
+        for r in data.get("results", []) or []:
             app_number = r.get("application_number", "?")
             sponsor = r.get("sponsor_name", "?")
 
             # Collect all submissions with dates
-            for s in (r.get("submissions", []) or []):
+            for s in r.get("submissions", []) or []:
                 date_str = s.get("submission_status_date", "")
                 sub_type = s.get("submission_type", "")
                 sub_status = s.get("submission_status", "")
                 class_desc = s.get("submission_class_code_description", "")
                 priority = s.get("review_priority", "")
-                all_submissions.append({
-                    "application_number": app_number,
-                    "type": sub_type,
-                    "status": sub_status,
-                    "date": date_str,
-                    "class_description": class_desc,
-                    "review_priority": priority,
-                })
+                all_submissions.append(
+                    {
+                        "application_number": app_number,
+                        "type": sub_type,
+                        "status": sub_status,
+                        "date": date_str,
+                        "class_description": class_desc,
+                        "review_priority": priority,
+                    }
+                )
 
             # Extract product-level data
             products_info = []
-            for p in (r.get("products", []) or []):
+            for p in r.get("products", []) or []:
                 ingredients = [i.get("name", "") for i in (p.get("active_ingredients", []) or [])]
                 te = p.get("te_code", "")
                 # Map TE codes to descriptions
@@ -1811,30 +2039,37 @@ def get_patent_expiry(drug_name: str) -> dict:
                     elif te.upper().startswith("B"):
                         te_desc = "Not therapeutically equivalent"
 
-                products_info.append({
-                    "brand_name": p.get("brand_name"),
-                    "active_ingredients": ingredients,
-                    "marketing_status": p.get("marketing_status"),
-                    "reference_drug": p.get("reference_drug") == "Yes",
-                    "reference_standard": p.get("reference_standard") == "Yes",
-                    "therapeutic_equivalence": te,
-                    "te_description": te_desc,
-                    "dosage_form": p.get("dosage_form"),
-                    "route": p.get("route"),
-                })
+                products_info.append(
+                    {
+                        "brand_name": p.get("brand_name"),
+                        "active_ingredients": ingredients,
+                        "marketing_status": p.get("marketing_status"),
+                        "reference_drug": p.get("reference_drug") == "Yes",
+                        "reference_standard": p.get("reference_standard") == "Yes",
+                        "therapeutic_equivalence": te,
+                        "te_description": te_desc,
+                        "dosage_form": p.get("dosage_form"),
+                        "route": p.get("route"),
+                    }
+                )
 
-            exclusivity_info.append({
-                "application_number": app_number,
-                "sponsor_name": sponsor,
-                "products": products_info,
-            })
+            exclusivity_info.append(
+                {
+                    "application_number": app_number,
+                    "sponsor_name": sponsor,
+                    "products": products_info,
+                }
+            )
 
     # Calculate estimated exclusivity from submission data
     estimated_exclusivity = []
     if all_submissions:
         # Find earliest ORIG (original) approval
-        orig_dates = [s["date"] for s in all_submissions
-                     if s["type"] == "ORIG" and s["status"] == "AP" and s["date"]]
+        orig_dates = [
+            s["date"]
+            for s in all_submissions
+            if s["type"] == "ORIG" and s["status"] == "AP" and s["date"]
+        ]
         if orig_dates:
             earliest = min(orig_dates)
             # Format: YYYYMMDD
@@ -1842,11 +2077,13 @@ def get_patent_expiry(drug_name: str) -> dict:
                 year = int(earliest[:4])
                 month = int(earliest[4:6])
                 day = int(earliest[6:8])
-                estimated_exclusivity.append({
-                    "type": "Initial FDA Approval",
-                    "date": f"{year}-{month:02d}-{day:02d}",
-                    "description": "Earliest original approval date",
-                })
+                estimated_exclusivity.append(
+                    {
+                        "type": "Initial FDA Approval",
+                        "date": f"{year}-{month:02d}-{day:02d}",
+                        "description": "Earliest original approval date",
+                    }
+                )
                 # Type 1 NME = 5 year exclusivity
                 type1_found = any(
                     s["class_description"] == "Type 1 - New Molecular Entity"
@@ -1854,11 +2091,13 @@ def get_patent_expiry(drug_name: str) -> dict:
                 )
                 if type1_found:
                     exp_year = year + 5
-                    estimated_exclusivity.append({
-                        "type": "NME Exclusivity Estimate (5yr)",
-                        "date": f"{exp_year}-{month:02d}-{day:02d}",
-                        "description": "New Molecular Entity — estimated 5-year exclusivity from approval",
-                    })
+                    estimated_exclusivity.append(
+                        {
+                            "type": "NME Exclusivity Estimate (5yr)",
+                            "date": f"{exp_year}-{month:02d}-{day:02d}",
+                            "description": "New Molecular Entity — estimated 5-year exclusivity from approval",
+                        }
+                    )
                 # Type 3-5 = 3 year exclusivity
                 type35_found = any(
                     c in (s.get("class_description", "") or "")
@@ -1867,19 +2106,19 @@ def get_patent_expiry(drug_name: str) -> dict:
                 )
                 if type35_found:
                     exp_year = year + 3
-                    estimated_exclusivity.append({
-                        "type": "New Clinical Study Exclusivity Estimate (3yr)",
-                        "date": f"{exp_year}-{month:02d}-{day:02d}",
-                        "description": "New formulation/combination — estimated 3-year exclusivity",
-                    })
+                    estimated_exclusivity.append(
+                        {
+                            "type": "New Clinical Study Exclusivity Estimate (3yr)",
+                            "date": f"{exp_year}-{month:02d}-{day:02d}",
+                            "description": "New formulation/combination — estimated 3-year exclusivity",
+                        }
+                    )
             except (ValueError, IndexError):
                 pass
 
     # Check if RLD (Reference Listed Drug) — indicates brand/originator
     is_rld = any(
-        p.get("reference_drug")
-        for app in exclusivity_info
-        for p in app.get("products", [])
+        p.get("reference_drug") for app in exclusivity_info for p in app.get("products", [])
     )
 
     # Summary
@@ -1929,8 +2168,11 @@ def get_drug_interactions(drug_name: str) -> dict:
     The FAERS co-reported drugs analysis still works for OTC drugs.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     # 1. Label-based interactions
     search_term = _escape(drug_name)
@@ -1947,6 +2189,7 @@ def get_drug_interactions(drug_name: str) -> dict:
         results = data.get("results", []) or []
         if results:
             label = results[0]
+
             def _get_field(field_name: str) -> str | None:
                 val = label.get(field_name)
                 if isinstance(val, list):
@@ -1969,10 +2212,12 @@ def get_drug_interactions(drug_name: str) -> dict:
             count = t.get("count", 0)
             # Skip the drug itself and empty/non-drug terms
             if name and name.lower() != drug_name.lower() and count > 0:
-                co_reported.append({
-                    "drug": name,
-                    "report_count": count,
-                })
+                co_reported.append(
+                    {
+                        "drug": name,
+                        "report_count": count,
+                    }
+                )
 
     # 3. Build structured result
     result = {
@@ -2006,9 +2251,17 @@ _OT_CACHE_TTL = 3600  # 1 hour
 
 def _chembl_search(drug_name: str) -> str | None:
     """Search Open Targets for a drug by name, return ChEMBL ID."""
-    query = '{"query":"{ search(queryString: \\"' + drug_name + '\\", entityNames: [\\"drug\\"]) { hits { id name description } } }"}'
+    query = (
+        '{"query":"{ search(queryString: \\"'
+        + drug_name
+        + '\\", entityNames: [\\"drug\\"]) { hits { id name description } } }"}'
+    )
     try:
-        req = urllib.request.Request(_OT_ENDPOINT, data=query.encode(), headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"})
+        req = urllib.request.Request(
+            _OT_ENDPOINT,
+            data=query.encode(),
+            headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"},
+        )
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read())
         hits = data.get("data", {}).get("search", {}).get("hits", [])
@@ -2028,36 +2281,54 @@ def get_opentargets_drug(drug_name: str) -> dict:
     drug targets, clinical development stage, drug type, and known indications.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     chembl_id = _chembl_search(drug_name)
     if not chembl_id:
-        return {"status": "ok", "drug_name": drug_name, "found": False,
-                "message": f"No Open Targets entry found for '{drug_name}'"}
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No Open Targets entry found for '{drug_name}'",
+        }
 
-    query = ('{"query":"{ drug(chemblId: \\"' + chembl_id + '\\") { '
-             'id name tradeNames maximumClinicalStage drugType '
-             'mechanismsOfAction { rows { actionType targetName } } '
-             'indications { rows { name status } } '
-             'adverseEvents { rows { name count } } '
-             'pharmacogenomics { rows { variantAnnotation } } } }"}')
+    query = (
+        '{"query":"{ drug(chemblId: \\"' + chembl_id + '\\") { '
+        "id name tradeNames maximumClinicalStage drugType "
+        "mechanismsOfAction { rows { actionType targetName } } "
+        "indications { rows { name status } } "
+        "adverseEvents { rows { name count } } "
+        'pharmacogenomics { rows { variantAnnotation } } } }"}'
+    )
 
     try:
         _rate_limited()
-        req = urllib.request.Request(_OT_ENDPOINT, data=query.encode(),
-                                     headers={"Content-Type": "application/json",
-                                              "User-Agent": "drug-pipeline-mcp/0.5"})
+        req = urllib.request.Request(
+            _OT_ENDPOINT,
+            data=query.encode(),
+            headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"},
+        )
         with urllib.request.urlopen(req, timeout=15) as resp:
             data = json.loads(resp.read())
     except Exception as e:
-        return {"status": "error", "error_code": "HTTP_ERROR",
-                "message": f"Open Targets API error: {str(e)[:100]}"}
+        return {
+            "status": "error",
+            "error_code": "HTTP_ERROR",
+            "message": f"Open Targets API error: {str(e)[:100]}",
+        }
 
     drug = data.get("data", {}).get("drug")
     if not drug:
-        return {"status": "ok", "drug_name": drug_name, "found": False,
-                "message": "No drug data returned from Open Targets"}
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": "No drug data returned from Open Targets",
+        }
 
     moa = drug.get("mechanismsOfAction", {}).get("rows", [])
     indications = drug.get("indications", {}).get("rows", [])
@@ -2074,15 +2345,18 @@ def get_opentargets_drug(drug_name: str) -> dict:
         "max_clinical_stage": drug.get("maximumClinicalStage"),
         "mechanisms_of_action": [
             {"type": m.get("actionType"), "target": m.get("targetName")}
-            for m in moa if m.get("targetName")
+            for m in moa
+            if m.get("targetName")
         ],
         "indications": [
             {"name": ind.get("name"), "status": ind.get("status")}
-            for ind in indications[:15] if ind.get("name")
+            for ind in indications[:15]
+            if ind.get("name")
         ],
         "top_adverse_events": [
             {"event": ae.get("name"), "count": ae.get("count")}
-            for ae in adverse[:10] if ae.get("name")
+            for ae in adverse[:10]
+            if ae.get("name")
         ],
         "data_source": "Open Targets Platform (EMBL-EBI)",
         "api_url": "https://platform.opentargets.org",
@@ -2105,8 +2379,11 @@ def get_dailymed_label(drug_name: str) -> dict:
     FDA Structured Product Labels (SPLs). Better OTC coverage.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     search = _escape(drug_name.upper())
     url = f"{_DM_BASE}/spls.json?drug_name={search}&pagesize=1"
@@ -2117,8 +2394,12 @@ def get_dailymed_label(drug_name: str) -> dict:
         return data
 
     if not isinstance(data, dict) or not data.get("data"):
-        return {"status": "ok", "drug_name": drug_name, "found": False,
-                "message": f"No DailyMed label found for '{drug_name}'"}
+        return {
+            "status": "ok",
+            "drug_name": drug_name,
+            "found": False,
+            "message": f"No DailyMed label found for '{drug_name}'",
+        }
 
     spl_entry = data["data"][0]
     setid = spl_entry.get("setid")
@@ -2153,8 +2434,11 @@ def compare_drugs(drug_a: str, drug_b: str) -> dict:
     mechanisms of action, patent/exclusivity, and drug labels.
     """
     if not all(len(d) >= 2 for d in [drug_a, drug_b]):
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "Each drug name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "Each drug name must be at least 2 characters",
+        }
 
     try:
         info_a = search_drug(drug_a)
@@ -2215,13 +2499,13 @@ def compare_drugs(drug_a: str, drug_b: str) -> dict:
                 return f"Approved ({approved[0].get('type', 'N/A')})"
             pending = [a for a in apps if "pending" in str(a.get("status", "")).lower()]
             if pending:
-                return f"Pending review"
+                return "Pending review"
             return "Applications filed"
         return "No FDA data"
 
     def _eu_status(d: dict) -> str:
         if d.get("status") == "ok" and d.get("authorised"):
-            return f"Authorised (EU)"
+            return "Authorised (EU)"
         if d.get("status") == "ok" and not d.get("authorised"):
             return "Not authorised (EU)"
         return "No EU data"
@@ -2229,7 +2513,7 @@ def compare_drugs(drug_a: str, drug_b: str) -> dict:
     def _extract_moa(d: dict) -> str:
         if d.get("found") and d.get("mechanisms_of_action"):
             moas = d["mechanisms_of_action"]
-            return "; ".join(f"{m.get('type','?')}→{m.get('target','?')}" for m in moas[:3])
+            return "; ".join(f"{m.get('type', '?')}→{m.get('target', '?')}" for m in moas[:3])
         return "N/A"
 
     def _patent_summary(d: dict) -> str:
@@ -2250,6 +2534,7 @@ def compare_drugs(drug_a: str, drug_b: str) -> dict:
 
     def _safety_n(d: dict) -> int:
         return d.get("total_reports", 0) if d.get("status") == "ok" else 0
+
     safety_n_a = safety_a.get("total_reports", 0) if safety_a.get("status") == "ok" else 0
     safety_n_b = safety_b.get("total_reports", 0) if safety_b.get("status") == "ok" else 0
 
@@ -2312,8 +2597,11 @@ def pipeline_landscape(condition: str, limit: int = 20) -> dict:
     - Pipeline PubMed review references
     """
     if not condition or len(condition) < 3:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "condition must be at least 3 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "condition must be at least 3 characters",
+        }
 
     # Phase 1: Approved drugs for condition
     approved = []
@@ -2384,8 +2672,12 @@ def pipeline_landscape(condition: str, limit: int = 20) -> dict:
         )
         if pubs.get("status") == "ok":
             publications = [
-                {"title": p.get("title", "?"), "pmid": p.get("pmid", "?"),
-                 "journal": p.get("journal", ""), "year": p.get("year", "")}
+                {
+                    "title": p.get("title", "?"),
+                    "pmid": p.get("pmid", "?"),
+                    "journal": p.get("journal", ""),
+                    "year": p.get("year", ""),
+                }
                 for p in pubs.get("results", pubs.get("publications", []))
             ]
     except Exception:
@@ -2419,10 +2711,40 @@ def pipeline_landscape(condition: str, limit: int = 20) -> dict:
                 "count": len(trials_phase3),
                 "trials": [
                     {
-                        "nct_id": t.get("nct_id", t.get("protocolSection", {}).get("identificationModule", {}).get("nctId", "?")),
-                        "title": t.get("title", t.get("briefTitle", t.get("protocolSection", {}).get("identificationModule", {}).get("briefTitle", "?"))),
-                        "sponsor": t.get("sponsor", t.get("leadSponsor", {}).get("name", t.get("protocolSection", {}).get("sponsorCollaboratorsModule", {}).get("leadSponsor", {}).get("name", "?"))),
-                        "status": t.get("status", t.get("overallStatus", t.get("protocolSection", {}).get("statusModule", {}).get("overallStatus", "?"))),
+                        "nct_id": t.get(
+                            "nct_id",
+                            t.get("protocolSection", {})
+                            .get("identificationModule", {})
+                            .get("nctId", "?"),
+                        ),
+                        "title": t.get(
+                            "title",
+                            t.get(
+                                "briefTitle",
+                                t.get("protocolSection", {})
+                                .get("identificationModule", {})
+                                .get("briefTitle", "?"),
+                            ),
+                        ),
+                        "sponsor": t.get(
+                            "sponsor",
+                            t.get("leadSponsor", {}).get(
+                                "name",
+                                t.get("protocolSection", {})
+                                .get("sponsorCollaboratorsModule", {})
+                                .get("leadSponsor", {})
+                                .get("name", "?"),
+                            ),
+                        ),
+                        "status": t.get(
+                            "status",
+                            t.get(
+                                "overallStatus",
+                                t.get("protocolSection", {})
+                                .get("statusModule", {})
+                                .get("overallStatus", "?"),
+                            ),
+                        ),
                     }
                     for t in trials_phase3[:limit]
                 ],
@@ -2432,10 +2754,40 @@ def pipeline_landscape(condition: str, limit: int = 20) -> dict:
                 "count": len(trials_phase2),
                 "trials": [
                     {
-                        "nct_id": t.get("nct_id", t.get("protocolSection", {}).get("identificationModule", {}).get("nctId", "?")),
-                        "title": t.get("title", t.get("briefTitle", t.get("protocolSection", {}).get("identificationModule", {}).get("briefTitle", "?"))),
-                        "sponsor": t.get("sponsor", t.get("leadSponsor", {}).get("name", t.get("protocolSection", {}).get("sponsorCollaboratorsModule", {}).get("leadSponsor", {}).get("name", "?"))),
-                        "status": t.get("status", t.get("overallStatus", t.get("protocolSection", {}).get("statusModule", {}).get("overallStatus", "?"))),
+                        "nct_id": t.get(
+                            "nct_id",
+                            t.get("protocolSection", {})
+                            .get("identificationModule", {})
+                            .get("nctId", "?"),
+                        ),
+                        "title": t.get(
+                            "title",
+                            t.get(
+                                "briefTitle",
+                                t.get("protocolSection", {})
+                                .get("identificationModule", {})
+                                .get("briefTitle", "?"),
+                            ),
+                        ),
+                        "sponsor": t.get(
+                            "sponsor",
+                            t.get("leadSponsor", {}).get(
+                                "name",
+                                t.get("protocolSection", {})
+                                .get("sponsorCollaboratorsModule", {})
+                                .get("leadSponsor", {})
+                                .get("name", "?"),
+                            ),
+                        ),
+                        "status": t.get(
+                            "status",
+                            t.get(
+                                "overallStatus",
+                                t.get("protocolSection", {})
+                                .get("statusModule", {})
+                                .get("overallStatus", "?"),
+                            ),
+                        ),
                     }
                     for t in trials_phase2[:limit]
                 ],
@@ -2445,8 +2797,7 @@ def pipeline_landscape(condition: str, limit: int = 20) -> dict:
                 "count": len(trials_phase1),
             },
             "key_mechanisms": [
-                {"mechanism": k, "drug_count": v}
-                for k, v in sorted_mechanisms[:10]
+                {"mechanism": k, "drug_count": v} for k, v in sorted_mechanisms[:10]
             ],
             "pipeline_publications": publications,
         },
@@ -2470,8 +2821,11 @@ def get_us_orphan_designations(drug_name: str) -> dict:
     exclusivity periods, and approval status.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     query = urllib.parse.quote(drug_name.strip().lower())
     url = f"{_MYCHEM_BASE}/query?q={query}&fields=fda_orphan_drug"
@@ -2482,8 +2836,11 @@ def get_us_orphan_designations(drug_name: str) -> dict:
         return data
 
     if not isinstance(data, dict):
-        return {"status": "error", "error_code": "PARSE_ERROR",
-                "message": "Unexpected API response format"}
+        return {
+            "status": "error",
+            "error_code": "PARSE_ERROR",
+            "message": "Unexpected API response format",
+        }
 
     hits = data.get("hits", [])
     orphan_entries = []
@@ -2507,16 +2864,18 @@ def get_us_orphan_designations(drug_name: str) -> dict:
             if not approval and "/" in desig_status:
                 parts = desig_status.split("/")
                 approval = parts[-1] if len(parts) > 1 else ""
-            orphan_entries.append({
-                "substance": substance,
-                "orphan_designation": orphan_designation_str,
-                "designation_status": desig_status,
-                "designated_date": entry.get("designated_date", ""),
-                "approval_status": approval,
-                "marketing_approval_date": entry.get("marketing_approval_date", ""),
-                "approved_labeled_indication": entry.get("approved_labeled_indication", ""),
-                "exclusivity_end_date": entry.get("exclusivity_end_date", ""),
-            })
+            orphan_entries.append(
+                {
+                    "substance": substance,
+                    "orphan_designation": orphan_designation_str,
+                    "designation_status": desig_status,
+                    "designated_date": entry.get("designated_date", ""),
+                    "approval_status": approval,
+                    "marketing_approval_date": entry.get("marketing_approval_date", ""),
+                    "approved_labeled_indication": entry.get("approved_labeled_indication", ""),
+                    "exclusivity_end_date": entry.get("exclusivity_end_date", ""),
+                }
+            )
 
     if not orphan_entries:
         return {
@@ -2547,8 +2906,11 @@ def _search_orphan_by_condition(condition: str, limit: int = 30) -> dict:
     Internal helper — queries MyChem.info for condition matches.
     """
     if not condition or len(condition) < 3:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "condition must be at least 3 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "condition must be at least 3 characters",
+        }
 
     query = urllib.parse.quote(f"fda_orphan_drug.orphan_designation:{condition}")
     url = f"{_MYCHEM_BASE}/query?q={query}&fields=name,fda_orphan_drug&size={min(limit, 100)}"
@@ -2567,12 +2929,14 @@ def _search_orphan_by_condition(condition: str, limit: int = 30) -> dict:
             continue
         for entry in orphan_field if isinstance(orphan_field, list) else [orphan_field]:
             if condition.lower() in (entry.get("orphan_designation", "") or "").lower():
-                results.append({
-                    "substance": name,
-                    "orphan_designation": entry.get("orphan_designation", ""),
-                    "designation_status": entry.get("designation_status", ""),
-                    "approval_status": entry.get("approval_status", ""),
-                })
+                results.append(
+                    {
+                        "substance": name,
+                        "orphan_designation": entry.get("orphan_designation", ""),
+                        "designation_status": entry.get("designation_status", ""),
+                        "approval_status": entry.get("approval_status", ""),
+                    }
+                )
 
     return {
         "status": "ok",
@@ -2607,8 +2971,11 @@ def get_drug_pricing(drug_name: str) -> dict:
     - GoodRx / Drugs@FDA for reference pricing online
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     search_term = drug_name.strip().upper()
 
@@ -2619,8 +2986,11 @@ def get_drug_pricing(drug_name: str) -> dict:
     _rate_limited()
     data = _cached_fetch(url, ttl=_OT_CACHE_TTL)
     if _is_error(data) or not isinstance(data, dict):
-        return {"status": "error", "error_code": "HTTP_ERROR",
-                "message": "Failed to query NDC directory"}
+        return {
+            "status": "error",
+            "error_code": "HTTP_ERROR",
+            "message": "Failed to query NDC directory",
+        }
 
     results = data.get("results", [])
     if not results:
@@ -2654,17 +3024,19 @@ def get_drug_pricing(drug_name: str) -> dict:
         ing_name = active_ing[0].get("name", "") if active_ing else ""
         ing_strength = active_ing[0].get("strength", "") if active_ing else ""
 
-        products.append({
-            "brand_name": r.get("brand_name", ""),
-            "generic_name": r.get("generic_name", ""),
-            "active_ingredient": ing_name,
-            "strength": ing_strength,
-            "dosage_form": r.get("dosage_form", ""),
-            "route": r.get("route", ""),
-            "labeler_name": r.get("labeler_name", ""),
-            "product_ndc": r.get("product_ndc", ""),
-            "is_otc": bool("OTC" in r.get("marketing_status", "").upper()),
-        })
+        products.append(
+            {
+                "brand_name": r.get("brand_name", ""),
+                "generic_name": r.get("generic_name", ""),
+                "active_ingredient": ing_name,
+                "strength": ing_strength,
+                "dosage_form": r.get("dosage_form", ""),
+                "route": r.get("route", ""),
+                "labeler_name": r.get("labeler_name", ""),
+                "product_ndc": r.get("product_ndc", ""),
+                "is_otc": bool("OTC" in r.get("marketing_status", "").upper()),
+            }
+        )
 
     return {
         "status": "ok",
@@ -2699,8 +3071,11 @@ def list_biosimilars(condition: str | None = None, limit: int = 50) -> dict:
     try:
         all_medicines = _load_ema_data()
     except Exception as e:
-        return {"status": "error", "error_code": "EMA_LOAD_ERROR",
-                "message": f"Failed to load EMA data: {str(e)[:100]}"}
+        return {
+            "status": "error",
+            "error_code": "EMA_LOAD_ERROR",
+            "message": f"Failed to load EMA data: {str(e)[:100]}",
+        }
 
     biosimilars = [m for m in all_medicines if m.get("biosimilar") == "Yes"]
 
@@ -2763,12 +3138,14 @@ def list_loss_of_exclusivity(limit: int = 30) -> dict:
         all_med = _load_ema_data()
         bios = [m for m in all_med if m.get("biosimilar") == "Yes"]
         for b in bios[:limit]:
-            biosimilars_with_refs.append({
-                "biosimilar_name": b.get("name", "?"),
-                "active_substance": b.get("active_substance", "") or b.get("inn", ""),
-                "atc_code": b.get("atc_code", ""),
-                "authorised": b.get("status", "") == "Authorised",
-            })
+            biosimilars_with_refs.append(
+                {
+                    "biosimilar_name": b.get("name", "?"),
+                    "active_substance": b.get("active_substance", "") or b.get("inn", ""),
+                    "atc_code": b.get("atc_code", ""),
+                    "authorised": b.get("status", "") == "Authorised",
+                }
+            )
     except Exception:
         pass
 
@@ -2784,14 +3161,18 @@ def list_loss_of_exclusivity(limit: int = 30) -> dict:
     # (limited — we don't have a reference product database, so mark known LOE risks)
     loe_entries = []
     for sub, info in refs.items():
-        loe_entries.append({
-            "active_substance": sub,
-            "atc_code": info["atc"],
-            "biosimilar_count": len(info["biosimilars"]),
-            "biosimilar_names": info["biosimilars"],
-            "category": "LOE Active" if len(info["biosimilars"]) >= 3 else "Early Biosimilar Entry",
-            "note": f"{len(info['biosimilars'])} EU-approved biosimilar(s) indicate active post-LOE market",
-        })
+        loe_entries.append(
+            {
+                "active_substance": sub,
+                "atc_code": info["atc"],
+                "biosimilar_count": len(info["biosimilars"]),
+                "biosimilar_names": info["biosimilars"],
+                "category": "LOE Active"
+                if len(info["biosimilars"]) >= 3
+                else "Early Biosimilar Entry",
+                "note": f"{len(info['biosimilars'])} EU-approved biosimilar(s) indicate active post-LOE market",
+            }
+        )
 
     loe_entries.sort(key=lambda x: -x["biosimilar_count"])
 
@@ -2821,20 +3202,29 @@ def get_trial_sites(nct_id: str) -> dict:
     """
     nct_id = nct_id.strip().upper()
     if not nct_id.startswith("NCT") or len(nct_id) < 8:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "NCT ID must start with 'NCT' and be at least 8 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "NCT ID must start with 'NCT' and be at least 8 characters",
+        }
 
     # Fetch direct from ClinicalTrials.gov v2 API (not via get_trial_detail wrapper)
     url = f"{_CLINICALTRIALS_BASE}/studies/{nct_id}"
     _rate_limited()
     raw = _cached_fetch(url, ttl=300)
     if _is_error(raw):
-        return {"status": "error", "error_code": "FETCH_ERROR",
-                "message": f"Failed to fetch trial data for {nct_id}"}
+        return {
+            "status": "error",
+            "error_code": "FETCH_ERROR",
+            "message": f"Failed to fetch trial data for {nct_id}",
+        }
 
     if not isinstance(raw, dict):
-        return {"status": "error", "error_code": "PARSE_ERROR",
-                "message": "Unexpected API response format"}
+        return {
+            "status": "error",
+            "error_code": "PARSE_ERROR",
+            "message": "Unexpected API response format",
+        }
 
     protocol = raw.get("protocolSection", {})
     contacts_mod = protocol.get("contactsLocationsModule", {})
@@ -2876,17 +3266,19 @@ def get_trial_sites(nct_id: str) -> dict:
         location_str = ", ".join(filter(None, [city, state, country]))
         country_c = country or "Unknown"
 
-        sites.append({
-            "facility": fac or "Not specified",
-            "location": location_str,
-            "city": city or "",
-            "state": state or "",
-            "zip": zip_code or "",
-            "country": country_c,
-            "status": status or "",
-            "contact_name": contact.get("name", "") if isinstance(contact, dict) else "",
-            "contact_phone": contact.get("phone", "") if isinstance(contact, dict) else "",
-        })
+        sites.append(
+            {
+                "facility": fac or "Not specified",
+                "location": location_str,
+                "city": city or "",
+                "state": state or "",
+                "zip": zip_code or "",
+                "country": country_c,
+                "status": status or "",
+                "contact_name": contact.get("name", "") if isinstance(contact, dict) else "",
+                "contact_phone": contact.get("phone", "") if isinstance(contact, dict) else "",
+            }
+        )
         country_counts[country_c] = country_counts.get(country_c, 0) + 1
 
     # Overall officials (investigators / central contacts)
@@ -2894,11 +3286,13 @@ def get_trial_sites(nct_id: str) -> dict:
     if isinstance(contacts_mod, dict):
         for off in contacts_mod.get("overallOfficials", []):
             if isinstance(off, dict):
-                officials.append({
-                    "name": off.get("name", ""),
-                    "role": off.get("role", ""),
-                    "affiliation": off.get("affiliation", ""),
-                })
+                officials.append(
+                    {
+                        "name": off.get("name", ""),
+                        "role": off.get("role", ""),
+                        "affiliation": off.get("affiliation", ""),
+                    }
+                )
 
     # Trial overview
     status_module = protocol.get("statusModule", {})
@@ -2928,7 +3322,9 @@ def get_trial_sites(nct_id: str) -> dict:
 # ═════════════════════════════════════════════════════════════
 
 
-def detect_combination_therapies(drug_name: str, condition: str | None = None, limit: int = 15) -> dict:
+def detect_combination_therapies(
+    drug_name: str, condition: str | None = None, limit: int = 15
+) -> dict:
     """
     Detect combination therapies involving a drug.
 
@@ -2938,8 +3334,11 @@ def detect_combination_therapies(drug_name: str, condition: str | None = None, l
     competitive positioning.
     """
     if not drug_name or len(drug_name) < 2:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "drug_name must be at least 2 characters"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "drug_name must be at least 2 characters",
+        }
 
     try:
         if condition:
@@ -2947,8 +3346,11 @@ def detect_combination_therapies(drug_name: str, condition: str | None = None, l
         else:
             trials = search_trials(intervention=drug_name, limit=limit)
     except Exception as e:
-        return {"status": "error", "error_code": "FETCH_ERROR",
-                "message": f"Failed to search trials: {str(e)[:100]}"}
+        return {
+            "status": "error",
+            "error_code": "FETCH_ERROR",
+            "message": f"Failed to search trials: {str(e)[:100]}",
+        }
 
     study_list = trials.get("results", trials.get("studies", []))
     if not study_list:
@@ -2987,12 +3389,14 @@ def detect_combination_therapies(drug_name: str, condition: str | None = None, l
                     co_drug_counter[name] = co_drug_counter.get(name, 0) + 1
 
         if all_interventions:
-            combinations.append({
-                "nct_id": nct,
-                "title": title,
-                "phase": phase,
-                "co_interventions": all_interventions,
-            })
+            combinations.append(
+                {
+                    "nct_id": nct,
+                    "title": title,
+                    "phase": phase,
+                    "co_interventions": all_interventions,
+                }
+            )
 
     # Most frequent co-interventions
     top_co = sorted(co_drug_counter.items(), key=lambda x: -x[1])[:15]
@@ -3004,10 +3408,7 @@ def detect_combination_therapies(drug_name: str, condition: str | None = None, l
         "found": len(combinations) > 0,
         "total_trials_analyzed": len(study_list),
         "trials_with_combinations": len(combinations),
-        "top_co_administered": [
-            {"drug": name, "trial_count": count}
-            for name, count in top_co
-        ],
+        "top_co_administered": [{"drug": name, "trial_count": count} for name, count in top_co],
         "combinations": combinations[:limit],
         "data_source": "ClinicalTrials.gov",
         "timestamp": datetime.utcnow().isoformat(),
@@ -3033,21 +3434,28 @@ def find_investigators(
     competitive intelligence, trial design, and KOL mapping.
     """
     if not condition and not drug_name:
-        return {"status": "error", "error_code": "INVALID_INPUT",
-                "message": "Provide at least one of: condition, drug_name"}
+        return {
+            "status": "error",
+            "error_code": "INVALID_INPUT",
+            "message": "Provide at least one of: condition, drug_name",
+        }
 
     # Search for relevant trials
     try:
         if drug_name and condition:
-            trials = search_trials(intervention=drug_name, condition=condition,
-                                   status="RECRUITING", limit=limit)
+            trials = search_trials(
+                intervention=drug_name, condition=condition, status="RECRUITING", limit=limit
+            )
         elif condition:
             trials = search_trials(condition=condition, status="RECRUITING", limit=limit)
         else:
             trials = search_trials(intervention=drug_name, status="RECRUITING", limit=limit)
     except Exception as e:
-        return {"status": "error", "error_code": "FETCH_ERROR",
-                "message": f"Failed to search trials: {str(e)[:100]}"}
+        return {
+            "status": "error",
+            "error_code": "FETCH_ERROR",
+            "message": f"Failed to search trials: {str(e)[:100]}",
+        }
 
     studies = trials.get("results", trials.get("studies", []))
     if not studies:
@@ -3090,7 +3498,9 @@ def find_investigators(
             sponsor_name = str(sponsor) if sponsor else ""
 
         # Central contacts (often PIs)
-        central_contacts = contacts_mod.get("centralContacts", []) if isinstance(contacts_mod, dict) else []
+        central_contacts = (
+            contacts_mod.get("centralContacts", []) if isinstance(contacts_mod, dict) else []
+        )
         locations = contacts_mod.get("locations", []) if isinstance(contacts_mod, dict) else []
 
         # Extract from central contacts
@@ -3098,15 +3508,17 @@ def find_investigators(
             name = cc.get("name", "").strip()
             if name and name.lower() not in seen_investigators:
                 seen_investigators.add(name.lower())
-                investigators.append({
-                    "name": name,
-                    "role": cc.get("role", "Principal Investigator"),
-                    "affiliation": sponsor_name,
-                    "phone": cc.get("phone", ""),
-                    "email": cc.get("email", ""),
-                    "trial_nct": nct,
-                    "trial_title": title[:120],
-                })
+                investigators.append(
+                    {
+                        "name": name,
+                        "role": cc.get("role", "Principal Investigator"),
+                        "affiliation": sponsor_name,
+                        "phone": cc.get("phone", ""),
+                        "email": cc.get("email", ""),
+                        "trial_nct": nct,
+                        "trial_title": title[:120],
+                    }
+                )
 
         # Also extract from facility contacts (site PIs)
         for loc in locations if isinstance(locations, list) else []:
@@ -3120,15 +3532,17 @@ def find_investigators(
                 name = pi.get("name", "").strip()
                 if name and name.lower() not in seen_investigators:
                     seen_investigators.add(name.lower())
-                    investigators.append({
-                        "name": name,
-                        "role": pi.get("role", "Site Investigator"),
-                        "affiliation": facility_name,
-                        "phone": pi.get("phone", ""),
-                        "email": pi.get("email", ""),
-                        "trial_nct": nct,
-                        "trial_title": title[:120],
-                    })
+                    investigators.append(
+                        {
+                            "name": name,
+                            "role": pi.get("role", "Site Investigator"),
+                            "affiliation": facility_name,
+                            "phone": pi.get("phone", ""),
+                            "email": pi.get("email", ""),
+                            "trial_nct": nct,
+                            "trial_title": title[:120],
+                        }
+                    )
 
         if len(investigators) >= limit:
             break

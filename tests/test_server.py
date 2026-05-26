@@ -90,11 +90,14 @@ class TestHandlerErrors:
 
     def test_unknown_tool_returns_error(self):
         """Simulate the call_tool handler for an unknown tool."""
-        from drug_pipeline.server import handle_call_tool
         import asyncio
+
+        from drug_pipeline.server import handle_call_tool
+
         result = asyncio.run(handle_call_tool("nonexistent_tool", {}))
         assert len(result) == 1
         import json
+
         data = json.loads(result[0].text)
         assert data["status"] == "error"
         assert data["error_code"] == "UNKNOWN_TOOL"
