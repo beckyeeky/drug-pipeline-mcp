@@ -1,5 +1,17 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-05-26 (v0.7.1)
+
+#### Fixed — CI Clean (ruff lint + format pass, 61/61 tests) 🟢
+
+- **Removed unused imports**: `datetime`, `VALID_PHASES`, `VALID_STATUSES` (server.py), `os`, `logging` (sources.py), `re` (duplicate, sources.py)
+- **Removed forward reference**: `_load_ema_data()` called before function definition (sources.py:42-45) — removed auto-refresh-on-import to fix F821 error
+- **Removed unused variables**: `id_mod` (get_trial_results), `phase2_count`, `all_companies` (scripts)
+- **Fixed ambiguous variable names**: `l` → `loc`, `landscape`
+- **Fixed style**: SIM108 (ternary), E402 (import position)
+- **Config**: per-file-ignores for E501 in drug_pipeline/*.py and tests/*.py
+- **Removed**: deprecated `scripts/pipeline-data-product.py`
+
 ## 2026-05-17 (v0.7.0)
 
 #### Added — 9 Neue Tools (28 total, +47%) 💊🚀
