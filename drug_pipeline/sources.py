@@ -1949,11 +1949,14 @@ def detect_safety_signals(drug_name: str) -> dict:
         "total_signals": len(signals),
         "signals": signals,
         "methodology": (
-            "PRR (Proportional Reporting Ratio): ratio of the proportion of reports "
-            "with a given reaction for the target drug vs all other drugs. "
-            "PRR > 1 suggests a disproportionate reporting signal."
+            "Simplified disproportionality metric (based on FAERS data). "
+            "This is NOT a validated PRR — the denominator uses a rough estimate "
+            "(background_total * 10) due to API constraints. "
+            "PRR > 1 suggests a possible disproportionate reporting signal, "
+            "but values should NOT be compared against regulatory PRR thresholds "
+            "(Chi-squared, PRR > 2). Use for directional screening only."
         ),
-        "data_source": "openFDA FAERS (PRR analysis)",
+        "data_source": "openFDA FAERS (simplified disproportionality analysis)",
         "timestamp": datetime.utcnow().isoformat(),
     }
 
