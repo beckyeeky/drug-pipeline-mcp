@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drug-pipeline-mcp"
-version = "0.7.0"
+version = "0.7.1"
 description = "Pharmaceutical R&D Pipeline Intelligence for AI Agents — clinical trials, FDA approvals, drug info & publications"
 readme = "README.md"
 license = "MIT"
@@ -19,7 +19,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
 ]
 
 dependencies = [

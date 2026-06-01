@@ -1,5 +1,15 @@
 # Changelog — drug-pipeline-mcp
 
+## 2026-06-01 (v0.7.1)
+
+#### Changed — Async Safety & Docs Cleanup ⚡
+
+- **Async safety**: Wrapped synchronous tool handlers in `await asyncio.to_thread()` to prevent blocking the event loop (server.py)
+- **`detect_safety_signal` disclaimer**: Tool description toned down from "PRR safety signal detection" to "Exploratory disproportionality screening" + added warning note in README
+- **Setuptools compatibility**: Removed deprecated `License :: OSI Approved :: MIT License` classifier to fix build on setuptools>=72 (PEP 639)
+- **Version bump**: `__init__.py`, `pyproject.toml`, `server.json` → v0.7.1
+- **EMA data refresh**: Reloaded → 2.702 Medikamente in der EU-Datenbank
+
 ## 2026-05-26 (v0.7.1)
 
 #### Fixed — CI Clean (ruff lint + format pass, 61/61 tests) 🟢

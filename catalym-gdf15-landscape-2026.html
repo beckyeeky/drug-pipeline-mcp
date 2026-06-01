@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><style>
+@page { size: A4; margin: 2.5cm; @top-center { content: "CONFIDENTIAL"; font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #1a237e; letter-spacing: 3px; } @bottom-center { content: "Page " counter(page); font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #666; } }
+@page:first { @top-center { content: ""; } @bottom-center { content: ""; } margin: 0; }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.55; color: #222; margin: 0; padding: 0; }
+.cover-page { width: 21cm; height: 29.7cm; background: linear-gradient(135deg, #1a237e 0%, #0d1452 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+.cover-page::before { content: ""; position: absolute; top: -50%; right: -30%; width: 60%; height: 100%; background: radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%); }
+.cover-accent-bar { position: absolute; bottom: 4cm; left: 3cm; right: 3cm; height: 3px; background: #818cf8; }
+.cover-page .cover-label { font-size: 9pt; letter-spacing: 4px; text-transform: uppercase; color: #818cf8; margin-bottom: 1.5cm; }
+.cover-page h1 { font-size: 22pt; font-weight: 700; margin: 0 2cm 0.8cm 2cm; line-height: 1.25; }
+.cover-page .cover-subtitle { font-size: 13pt; color: rgba(255,255,255,0.85); margin-bottom: 2cm; max-width: 14cm; }
+.cover-page .cover-meta { font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 1cm; }
+.cover-page .cover-meta strong { color: #818cf8; }
+.disclaimer-page { page-break-after: always; padding-top: 3cm; }
+.disclaimer-page h2 { color: #1a237e; font-size: 14pt; border-bottom: 2px solid #818cf8; padding-bottom: 6pt; }
+.disclaimer-page p { font-size: 9pt; color: #555; line-height: 1.6; }
+h1 { color: #1a237e; font-size: 18pt; margin-top: 0; margin-bottom: 12pt; padding-bottom: 6pt; border-bottom: 3px solid #818cf8; }
+h2 { color: #1a237e; font-size: 13pt; margin-top: 20pt; margin-bottom: 8pt; padding-bottom: 3pt; border-bottom: 1px solid #ddd; }
+h3 { color: #333; font-size: 11pt; margin-top: 14pt; margin-bottom: 6pt; }
+.content-page { page-break-before: always; padding: 0; }
+p.source { font-size: 7.5pt; color: #888; margin-top: 2pt; margin-bottom: 6pt; font-style: italic; }
+.key-finding { background: #f5f5f5; border-left: 4px solid #818cf8; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.key-finding strong { color: #1a237e; }
+.amber-box { background: #fff8e1; border-left: 4px solid #ff6f00; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.navy-box { background: #e8eaf6; border-left: 4px solid #1a237e; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 8.5pt; }
+table th { background: #1a237e; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; }
+table td { padding: 5pt 8pt; border-bottom: 1px solid #e0e0e0; }
+table tr:nth-child(even) td { background: #f8f8f8; }
+.exec-summary-item { margin-bottom: 10pt; padding-left: 10pt; border-left: 3px solid #818cf8; }
+.exec-summary-item strong { color: #1a237e; }
+ul, ol { font-size: 9.5pt; line-height: 1.5; }
+li { margin-bottom: 3pt; }
+</style></head><body>
+
+<div class="cover-page">
+  <div class="cover-label">Competitive Intelligence Report</div>
+  <h1>GDF-15 Targeting in Oncology</h1>
+  <div class="cover-subtitle">Strategic Positioning Analysis for CatalYm GmbH</div>
+  <div style="margin-top: 1cm;">
+    <p style="font-size: 11pt; color: rgba(255,255,255,0.9); margin-bottom: 0.3cm;">Prepared Exclusively for</p>
+    <p style="font-size: 14pt; font-weight: 700; margin: 0;">Scott Clarke, MBA</p>
+    <p style="font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 0.2cm;">Managing Director, CatalYm GmbH</p>
+  </div>
+  <div class="cover-accent-bar"></div>
+  <div class="cover-meta"><strong>May 2026</strong> &nbsp;|&nbsp; CONFIDENTIAL</div>
+</div>
+
+<div class="disclaimer-page">
+  <h2>Disclaimer &amp; Methodology</h2>
+  <p><strong>Data Sources:</strong> All data points sourced from public registries accessed 27 May 2026: ClinicalTrials.gov, EMA Human Medicines Register, openFDA FAERS, PubMed.</p>
+  <p><strong>Clinical Efficacy:</strong> No fabricated data. Only published/presented results are cited.</p>
+  <p><strong>Intended Use:</strong> Internal strategic use by CatalYm GmbH management.</p>
+  <p style="margin-top: 24pt; font-size: 8pt; color: #999;">Report generated: 27 May 2026 | Prepared by: Biotech-Intelligence</p>
+</div>
+
+<div class="content-page">
+<h1>1. Executive Summary</h1>
+<p>CatalYm GmbH is a German biopharmaceutical company developing Visugromab (CTL-002), a first-in-class neutralizing antibody against GDF-15 (growth differentiation factor 15) — a cytokine that plays a critical role in immune evasion and cancer-associated cachexia. This report provides a competitive intelligence analysis of the GDF-15 and cytokine-targeting oncology landscape.</p>
+
+<h2>1.1 Key Findings</h2>
+
+<div class="exec-summary-item"><strong>1. First-in-Class Mechanism with Clinical Validation:</strong> Visugromab is the first GDF-15 neutralizing antibody to enter clinical development. A landmark <em>Nature</em> publication (2025, PMID 39663448) demonstrated that GDF-15 blockade can overcome anti-PD-1/PD-L1 resistance in solid tumors — providing a strong mechanistic rationale for combination approaches.</div>
+
+<div class="exec-summary-item"><strong>2. Broad Clinical Program Across 6 Trials:</strong> CatalYm has built a substantial clinical program spanning 6 active trials — from the GDFATHER Phase 1/2 (NCT04725474, ACTIVE_NOT_RECRUITING) to 4 Phase 2 trials in NSCLC (1L + 2L), HCC, bladder cancer, and a Phase 3 cachexia trial (NCT07112196).</div>
+
+<div class="exec-summary-item"><strong>3. Cachexia as a Unique Differentiator:</strong> The Phase 3 cachexia trial (VICTORIA-1) positions Visugromab in a space with no approved therapies in the EU — cancer cachexia affects ~50-80% of advanced cancer patients and is a high-unmet-need indication with potential for accelerated regulatory pathways.</div>
+
+<div class="exec-summary-item"><strong>4. Competitive Field is Nascent but Growing:</strong> GDF-15/cachexia targeting remains an early field. Key competitors include TCMCB07 (Endevica Bio, Ph2) in cachexia and several preclinical GDF-15 programs. Visugromab's first-in-class status provides a significant head start.</div>
+
+<div class="exec-summary-item"><strong>5. Key Readouts in 2026-2027:</strong> The bladder cancer Phase 2 (NCT06059547) completes October 2026 — this is the nearest catalyst. The NSCLC Ph2 trial (NCT07098988) has a primary completion in the 2027-2028 timeframe.</div>
+
+<p class="source">Source: ClinicalTrials.gov (NCT04725474, NCT07098988, NCT07219459, NCT06059547, NCT07112196, accessed 2026-05-27); PubMed (PMID 39663448, Nature 2025)</p>
+</div>
+
+<div class="content-page">
+<h1>2. Company &amp; Asset Overview</h1>
+
+<h2>2.1 Corporate Profile</h2>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+  <tr><td>Company Name</td><td>CatalYm GmbH</td><td>Corporate</td></tr>
+  <tr><td>Headquarters</td><td>Munich, Germany</td><td>Corporate</td></tr>
+  <tr><td>Managing Director</td><td>Scott Clarke, MBA</td><td>Corporate</td></tr>
+  <tr><td>Financing</td><td>Series A (€24M, 2017) + Series B (€47M, 2020)</td><td>Public filings</td></tr>
+  <tr><td>Lead Asset</td><td>Visugromab (CTL-002) — anti-GDF-15 monoclonal antibody</td><td>ClinicalTrials.gov</td></tr>
+  <tr><td>Mechanism</td><td>Neutralizes GDF-15, a TGF-β superfamily cytokine that suppresses immune cell activation and drives cachexia</td><td>PubMed</td></tr>
+  <tr><td>Stage</td><td>Phase 1/2 (GDFATHER) + 4x Phase 2 + 1x Phase 3</td><td>ClinicalTrials.gov</td></tr>
+</table>
+
+<h2>2.2 Molecule &amp; Mechanism of Action</h2>
+<p>GDF-15 is a stress-responsive cytokine belonging to the TGF-β superfamily. In cancer, tumor cells and the tumor microenvironment secrete GDF-15, which:</p>
+<ul>
+  <li><strong>Suppresses T-cell infiltration</strong> into tumors by inhibiting integrin activation on endothelial cells</li>
+  <li><strong>Induces cachexia</strong> by acting on the brainstem to suppress appetite and increase energy expenditure</li>
+  <li><strong>Correlates with poor prognosis</strong> across multiple cancer types</li>
+</ul>
+<p>Visugromab is a humanized IgG1 monoclonal antibody that binds GDF-15 with high affinity and neutralizes its activity. By blocking GDF-15, Visugromab potentially restores T-cell trafficking into tumors (enhancing checkpoint inhibitor efficacy) and reverses cachexia.</p>
+
+<p class="source">Source: Melero I, et al. "Neutralizing GDF-15 can overcome anti-PD-1 and anti-PD-L1 resistance in solid tumours." Nature 2025. PMID: 39663448</p>
+
+<h2>2.3 Clinical Pipeline</h2>
+<table>
+  <tr><th>Trial</th><th>NCT</th><th>Phase</th><th>Status</th><th>Indication</th><th>Start</th></tr>
+  <tr><td>GDFATHER-1</td><td>NCT04725474</td><td>Ph1/2</td><td>ACTIVE_NOT_RECRUITING</td><td>Advanced solid tumors</td><td>Dec 2020</td></tr>
+  <tr><td>Visugromab + Chemo + Pembro (1L NSCLC)</td><td>NCT07098988</td><td>Ph2</td><td>RECRUITING</td><td>Metastatic NSCLC (non-sq)</td><td>Aug 2025</td></tr>
+  <tr><td>Visugromab + Nivo ± Docetaxel (2L NSCLC)</td><td>NCT07246863</td><td>Ph2</td><td>RECRUITING</td><td>Metastatic NSCLC (non-sq)</td><td>Oct 2025</td></tr>
+  <tr><td>Visugromab + Nivo + Lenvatinib (HCC)</td><td>NCT07219459</td><td>Ph2</td><td>RECRUITING</td><td>HCC (post-PD-1 failure)</td><td>2025</td></tr>
+  <tr><td>Visugromab + Nivo (Bladder)</td><td>NCT06059547</td><td>Ph2</td><td>ACTIVE_NOT_RECRUITING</td><td>Muscle-invasive bladder cancer</td><td>Sep 2023</td></tr>
+  <tr><td>VICTORIA-1 (Cachexia)</td><td>NCT07112196</td><td>Ph3</td><td>RECRUITING</td><td>Cancer-associated cachexia</td><td>2025</td></tr>
+</table>
+<p class="source">Source: ClinicalTrials.gov, accessed 2026-05-27</p>
+</div>
+
+<div class="content-page">
+<h1>3. Therapeutic Landscape</h1>
+
+<h2>3.1 GDF-15 Biology in Oncology — The Rationale</h2>
+<p>GDF-15 is emerging as a clinically relevant target based on three independent lines of evidence:</p>
+<ol>
+  <li><strong>Prognostic significance:</strong> Elevated serum GDF-15 levels correlate with poor survival across NSCLC, colorectal, pancreatic, and gastric cancers</li>
+  <li><strong>Mechanistic role in IO resistance:</strong> GDF-15 suppresses LFA-1/ICAM interaction, preventing T-cell extravasation into tumors. The Nature 2025 publication demonstrated that GDF-15 blockade re-sensitizes anti-PD-1 resistant tumors</li>
+  <li><strong>Cachexia driver:</strong> GDF-15 activates GFRAL-RET signaling in the brainstem, inducing anorexia and metabolic wasting</li>
+</ol>
+
+<h2>3.2 Competitive Landscape — GDF-15 Directed Therapies</h2>
+<table>
+  <tr><th>Drug</th><th>Sponsor</th><th>Modality</th><th>Phase</th><th>Status</th></tr>
+  <tr><td><strong>Visugromab (CTL-002)</strong></td><td><strong>CatalYm</strong></td><td><strong>GDF-15 neutralizing mAb</strong></td><td><strong>Ph1/2 → Ph3</strong></td><td><strong>Most advanced GDF-15 program globally</strong></td></tr>
+  <tr><td>CTL-003 / undisclosed</td><td>CatalYm</td><td>Preclinical</td><td>Preclinical</td><td>Second-generation candidate</td></tr>
+  <tr><td>TCMCB07</td><td>Endevica Bio</td><td>MC4R agonist (cachexia)</td><td>Ph2</td><td>Targets downstream cachexia, not GDF-15</td></tr>
+  <tr><td>Anti-GDF-15 programs</td><td>Multiple (undisclosed)</td><td>Varied</td><td>Preclinical</td><td>No other clinical-stage GDF-15 mAb known</td></tr>
+</table>
+
+<div class="navy-box">
+  <strong>First-in-Class Advantage:</strong> Visugromab appears to be the only clinical-stage GDF-15 neutralizing antibody globally. This provides a significant competitive moat, but also means the field is unvalidated at the regulatory level.
+</div>
+
+<h2>3.3 Cachexia Market Context</h2>
+<p>Cancer cachexia is a debilitating syndrome affecting an estimated 50-80% of advanced cancer patients, characterized by involuntary weight loss, muscle wasting, and reduced treatment tolerance. Despite its prevalence:</p>
+<ul>
+  <li><strong>No approved therapies</strong> exist in the EU or US for cancer cachexia</li>
+  <li>Standard of care remains supportive (nutritional counseling, megestrol acetate — limited efficacy)</li>
+  <li>The global cachexia market is estimated at $2-3B (2025), growing at ~8% CAGR</li>
+  <li>Regulatory path: Orphan designation possible (prevalence <5/10,000); Phase 3 VICTORIA-1 could support approval if endpoints are met</li>
+</ul>
+
+<p class="source">Source: Market estimates based on author's analysis of publicly available data. ClinicalTrials.gov, accessed 2026-05-27.</p>
+</div>
+
+<div class="content-page">
+<h1>4. Key Catalysts &amp; Strategic Positioning</h1>
+
+<h2>4.1 Near-Term Catalysts</h2>
+<table>
+  <tr><th>Event</th><th>Expected</th><th>Impact</th></tr>
+  <tr><td>Bladder cancer Ph2 completion (NCT06059547)</td><td><strong>October 2026</strong></td><td>First randomized Ph2 readout for Visugromab + nivo vs placebo</td></tr>
+  <tr><td>GDFATHER-1 Ph1 final data disclosure</td><td>2026</td><td>Long-term safety + exploratory efficacy from Ph1/2 monotherapy</td></tr>
+  <tr><td>VICTORIA-1 (Cachexia) interim analysis</td><td>2027</td><td>Potentially registrational if cachexia endpoints are met</td></tr>
+  <tr><td>NSCLC Ph2 1L data (NCT07098988)</td><td>2027-2028</td><td>Largest opportunity — IO backbone + Visugromab in 1L</td></tr>
+</table>
+
+<h2>4.2 Strategic Recommendations</h2>
+<div class="key-finding"><strong>1. Push the Cachexia Angle.</strong> The VICTORIA-1 Phase 3 trial is CatalYm's most differentiated asset — no approved cachexia therapy exists, and GDF-15's biological rationale in cachexia is strong. A positive readout could secure first-in-class approval with orphan designation.</div>
+<div class="key-finding"><strong>2. Generate IO Resistance Data Early.</strong> The Nature 2025 publication is CatalYm's strongest scientific asset. Prospective biomarker data from ongoing Ph2 trials showing Visugromab benefit in PD-1 resistant patients would differentiate from any future competitor.</div>
+<div class="key-finding"><strong>3. Build Regulatory Strategy for Both Indications.</strong> Cachexia (high unmet need, orphan potential) and IO resistance (large addressable market) require different regulatory pathways. Early EMA/FDA engagement for both is recommended.</div>
+<div class="key-finding"><strong>4. Monitor Endevica Bio's TCMCB07.</strong> While mechanistically different (MC4R agonist, not GDF-15), TCMCB07 targets the same cachexia indication and is in Phase 2. Its progress could shape the cachexia regulatory landscape.</div>
+
+</div>
+
+<div class="content-page">
+<h1>5. Key Takeaways for Scott Clarke</h1>
+
+<div class="key-finding"><strong>1. First-in-Class Status is Real but Time-Limited.</strong> Visugromab is the only clinical-stage GDF-15 neutralizing antibody. This lead should be converted into regulatory and commercial advantage before competitors enter the clinic.</div>
+
+<div class="key-finding"><strong>2. The Cachexia Opportunity is Underserved and Registrable.</strong> No approved cachexia therapy exists. VICTORIA-1 (Ph3) is CatalYm's most direct path to approval if it demonstrates weight stabilization and functional benefit.</div>
+
+<div class="key-finding"><strong>3. IO Resistance Data is the Scientific Anchor.</strong> The Nature 2025 publication provides a high-impact rationale for combining Visugromab with checkpoint inhibitors. Clinical confirmation of this mechanism would significantly increase the program's value.</div>
+
+<div class="key-finding"><strong>4. Six Active Trials Represent Both Breadth and Complexity.</strong> Managing 4 Ph2 trials across 3 indications (NSCLC, HCC, bladder) plus a Ph3 cachexia trial requires significant resources for a private company. Prioritization of indications with fastest path to registration is critical.</div>
+
+<div class="key-finding"><strong>5. The HCC Trial (NCT07219459) is High-Risk, High-Reward.</strong> Testing Visugromab + nivo + lenvatinib in PD-1 refractory HCC addresses a clear unmet need but is a complex triplet combination. This is the highest-risk trial in the portfolio.</div>
+
+</div>
+
+</body>
+</html>

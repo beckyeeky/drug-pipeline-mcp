@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><style>
+@page { size: A4; margin: 2.5cm; @top-center { content: "CONFIDENTIAL"; font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #0d9488; letter-spacing: 3px; } @bottom-center { content: "Page " counter(page); font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #666; } }
+@page:first { @top-center { content: ""; } @bottom-center { content: ""; } margin: 0; }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.55; color: #222; margin: 0; padding: 0; }
+.cover-page { width: 21cm; height: 29.7cm; background: linear-gradient(135deg, #0d9488 0%, #0a6b62 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+.cover-page::before { content: ""; position: absolute; top: -50%; right: -30%; width: 60%; height: 100%; background: radial-gradient(ellipse, rgba(13,148,136,0.15) 0%, transparent 70%); }
+.cover-accent-bar { position: absolute; bottom: 4cm; left: 3cm; right: 3cm; height: 3px; background: #5eead4; }
+.cover-page .cover-label { font-size: 9pt; letter-spacing: 4px; text-transform: uppercase; color: #5eead4; margin-bottom: 1.5cm; }
+.cover-page h1 { font-size: 22pt; font-weight: 700; margin: 0 2cm 0.8cm 2cm; line-height: 1.25; }
+.cover-page .cover-subtitle { font-size: 13pt; color: rgba(255,255,255,0.85); margin-bottom: 2cm; max-width: 14cm; }
+.cover-page .cover-meta { font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 1cm; }
+.cover-page .cover-meta strong { color: #5eead4; }
+.disclaimer-page { page-break-after: always; padding-top: 3cm; }
+.disclaimer-page h2 { color: #0d9488; font-size: 14pt; border-bottom: 2px solid #5eead4; padding-bottom: 6pt; }
+.disclaimer-page p { font-size: 9pt; color: #555; line-height: 1.6; }
+h1 { color: #0d9488; font-size: 18pt; margin-top: 0; margin-bottom: 12pt; padding-bottom: 6pt; border-bottom: 3px solid #5eead4; }
+h2 { color: #0d9488; font-size: 13pt; margin-top: 20pt; margin-bottom: 8pt; padding-bottom: 3pt; border-bottom: 1px solid #ddd; }
+h3 { color: #333; font-size: 11pt; margin-top: 14pt; margin-bottom: 6pt; }
+.content-page { page-break-before: always; padding: 0; }
+p.source { font-size: 7.5pt; color: #888; margin-top: 2pt; margin-bottom: 6pt; font-style: italic; }
+.key-finding { background: #f5f5f5; border-left: 4px solid #0d9488; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.key-finding strong { color: #0d9488; }
+.amber-box { background: #fff8e1; border-left: 4px solid #ff6f00; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.navy-box { background: #e8f5f4; border-left: 4px solid #0d9488; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 8.5pt; }
+table th { background: #0d9488; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; }
+table td { padding: 5pt 8pt; border-bottom: 1px solid #e0e0e0; }
+table tr:nth-child(even) td { background: #f8f8f8; }
+.exec-summary-item { margin-bottom: 10pt; padding-left: 10pt; border-left: 3px solid #0d9488; }
+.exec-summary-item strong { color: #0d9488; }
+ul, ol { font-size: 9.5pt; line-height: 1.5; }
+li { margin-bottom: 3pt; }
+</style></head><body>
+
+<div class="cover-page">
+  <div class="cover-label">Competitive Intelligence Report</div>
+  <h1>ADC Conjugation Technology Landscape</h1>
+  <div class="cover-subtitle">Strategic Positioning Analysis for Tubulis GmbH</div>
+  <div style="margin-top: 1cm;">
+    <p style="font-size: 11pt; color: rgba(255,255,255,0.9); margin-bottom: 0.3cm;">Prepared Exclusively for</p>
+    <p style="font-size: 14pt; font-weight: 700; margin: 0;">Dr. Dominik Schumacher</p>
+    <p style="font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 0.2cm;">CEO, Tubulis GmbH</p>
+  </div>
+  <div class="cover-accent-bar"></div>
+  <div class="cover-meta"><strong>May 2026</strong> &nbsp;|&nbsp; CONFIDENTIAL</div>
+</div>
+
+<div class="disclaimer-page">
+  <h2>Disclaimer &amp; Methodology</h2>
+  <p><strong>Data Sources:</strong> All data points sourced from public registries accessed 27 May 2026: ClinicalTrials.gov, EMA Human Medicines Register, PubMed.</p>
+  <p><strong>Intended Use:</strong> Internal strategic use by Tubulis GmbH management.</p>
+  <p style="margin-top: 24pt; font-size: 8pt; color: #999;">Report generated: 27 May 2026 | Prepared by: Biotech-Intelligence</p>
+</div>
+
+<div class="content-page">
+<h1>1. Executive Summary</h1>
+<p>Tubulis GmbH is a Munich-based ADC company developing next-generation antibody-drug conjugates using its proprietary P5® conjugation technology. Unlike conventional ADCs that rely on stochastic (random) conjugation or first-generation site-specific approaches, P5® enables highly homogeneous, hydrophilic ADCs with stable linker-payload attachment. This report analyzes the ADC conjugation technology landscape and Tubulis's position within it.</p>
+
+<h2>1.1 Key Findings</h2>
+
+<div class="exec-summary-item"><strong>1. P5® Addresses a Real ADC Industry Problem:</strong> Conventional ADCs suffer from heterogeneous DAR (drug-to-antibody ratio), hydrophobic payload-induced aggregation, and premature payload release. P5®'s homogeneous, hydrophilic design directly addresses these limitations — as validated by TUB-040's preclinical data (Mol Cancer Ther 2025, PMID 40667801).</div>
+
+<div class="exec-summary-item"><strong>2. Two Assets in FiH, Both RECRUITING:</strong> TUB-040 (NaPi2b-targeting, exatecan payload, Ph1/2, n=250) and TUB-030 (undisclosed target, Ph1/2, n=250) are both actively recruiting. This dual-asset strategy de-risks the platform: if one target fails, the P5® technology is validated by the other.</div>
+
+<div class="exec-summary-item"><strong>3. NaPi2b is a Clinically Validated Target:</strong> NaPi2b was previously targeted by Upifitamab rilsodotin (UpRi, Mersana/Ph3, terminated for futility). TUB-040's differentiation — stable linker, exatecan payload (topo I inhibitor, not auristatin) — may overcome the limitations that led to UpRi's failure.</div>
+
+<div class="exec-summary-item"><strong>4. ADC Conjugation Competition is Intense:</strong> Established platforms (Seagen's maleimide conjugation, Synaffix' GlycoConnect, ImmunoGen's DGN549) compete for BD partnerships. Emerging technologies (P5®, Oxford BioTherapeutics' platform) are vying for differentiation. P5®'s dual advantage (homogeneity + hydrophilicity) is a defensible position.</div>
+
+<div class="exec-summary-item"><strong>5. Key Readout: 2027-2028:</strong> Both TUB-040 (NAPISTAR 1-01) and TUB-030 have primary completion dates in 2027-2028. The first clinical data will be critical for platform validation.</div>
+
+<p class="source">Source: ClinicalTrials.gov (NCT06303505, NCT06657222); PubMed (PMID 40667801); Mersana Therapeutics corporate disclosures</p>
+</div>
+
+<div class="content-page">
+<h1>2. Company &amp; Pipeline Overview</h1>
+
+<h2>2.1 Corporate Profile</h2>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+  <tr><td>Company Name</td><td>Tubulis GmbH</td><td>Corporate</td></tr>
+  <tr><td>Headquarters</td><td>Munich, Germany</td><td>Corporate</td></tr>
+  <tr><td>CEO &amp; Co-Founder</td><td>Dr. Dominik Schumacher</td><td>Corporate</td></tr>
+  <tr><td>Financing</td><td>Series B €55M (2023)</td><td>Public filings</td></tr>
+  <tr><td>Platform</td><td>P5® — homogeneous, hydrophilic ADC conjugation technology</td><td>Corporate / PubMed</td></tr>
+  <tr><td>Lead Assets</td><td>TUB-040 (NaPi2b-ADC) + TUB-030 (undisclosed target)</td><td>ClinicalTrials.gov</td></tr>
+  <tr><td>Stage</td><td>Both assets in Phase 1/2, RECRUITING</td><td>ClinicalTrials.gov</td></tr>
+</table>
+
+<h2>2.2 Pipeline Summary</h2>
+<table>
+  <tr><th>Asset</th><th>Target</th><th>Payload</th><th>Indications</th><th>Phase</th><th>Status</th><th>Enrollment</th></tr>
+  <tr><td>TUB-040</td><td>NaPi2b</td><td>Exatecan (topo I inhibitor)</td><td>Ovarian cancer, NSCLC</td><td>Ph1/2</td><td>RECRUITING</td><td>250</td></tr>
+  <tr><td>TUB-030</td><td>Undisclosed</td><td>Undisclosed</td><td>HNSCC, SCLC, NSCLC, TNBC, CRC</td><td>Ph1/2</td><td>RECRUITING</td><td>250</td></tr>
+</table>
+<p class="source">Source: ClinicalTrials.gov (NCT06303505, NCT06657222), accessed 2026-05-27</p>
+
+<h2>2.3 P5® Technology Differentiation</h2>
+<table>
+  <tr><th>Parameter</th><th>Conventional ADC</th><th>Tubulis P5®</th></tr>
+  <tr><td>Conjugation</td><td>Stochastic (random) — heterogeneous DAR 0-8</td><td>Site-specific — homogeneous DAR</td></tr>
+  <tr><td>Hydrophobicity</td><td>High — payload+linker induces aggregation</td><td>Low — hydrophilic design prevents aggregation</td></tr>
+  <tr><td>Linker Stability</td><td>Variable — premature payload release common</td><td>Stable — designed for systemic stability</td></tr>
+  <tr><td>PK Profile</td><td>Short half-life due to aggregation/clearance</td><td>Extended half-life, improved tumor penetration</td></tr>
+  <tr><td>Therapeutic Index</td><td>Narrow — toxicity from instability + heterogeneity</td><td>Potentially wider — homogeneous + stable</td></tr>
+</table>
+<p class="source">Source: Tubulis corporate materials; PubMed PMID 40667801 (TUB-040 preclinical, Mol Cancer Ther 2025)</p>
+</div>
+
+<div class="content-page">
+<h1>3. ADC Conjugation Technology Landscape</h1>
+
+<h2>3.1 Platform Comparison</h2>
+<table>
+  <tr><th>Platform</th><th>Company</th><th>Approach</th><th>Clinical Stage</th><th>BD Partnering</th></tr>
+  <tr><td><strong>P5®</strong></td><td><strong>Tubulis</strong></td><td><strong>Homogeneous, hydrophilic conjugation</strong></td><td><strong>Ph1/2 (own assets)</strong></td><td><strong>Not publicly disclosed</strong></td></tr>
+  <tr><td>GlycoConnect</td><td>Synaffix (now Lonza)</td><td>Glycan-directed conjugation</td><td>Ph1-3 (licensed)</td><td>Multiple (ADC Therapeutics, etc.)</td></tr>
+  <tr><td>THIOMAB</td><td>Genentech/Roche</td><td>Cysteine-engineered site-specific</td><td>Ph1-2 (licensed)</td><td>Limited external</td></tr>
+  <tr><td>SMARTag</td><td>Catalent Biologics</td><td>Aldehyde-tagged conjugation</td><td>Ph1 (licensed)</td><td>Limited</td></tr>
+  <tr><td>Ajicap</td><td>Ajinomoto</td><td>Enzymatic conjugation</td><td>Preclinical-Ph1</td><td>Emerging</td></tr>
+  <tr><td>DGN549</td><td>ImmunoGen (now AbbVie)</td><td>Engineered cysteine (site-specific)</td><td>Ph1 (own assets)</td><td>Part of AbbVie</td></tr>
+</table>
+
+<p class="source">Source: Company filings, industry literature, ClinicalTrials.gov. Accessed 2026-05-27.</p>
+
+<div class="navy-box">
+  <strong>Market Context:</strong> The ADC market is projected to exceed $25B by 2028, driven by Enhertu (HER2, Daiichi/AZ), Trodelvy (Trop-2, Gilead), and Kadcyla (HER2, Roche). Next-generation conjugation technologies are a key enabler for ADC innovation, with improved therapeutic index being the primary unmet need.
+</div>
+
+<h2>3.2 NaPi2b Target Context</h2>
+<p>NaPi2b (sodium-dependent phosphate transport protein 2b) is a cell surface receptor overexpressed in ovarian cancer (~70-90%) and lung adenocarcinoma (~60-80%). It was previously targeted by:</p>
+<ul>
+  <li><strong>Upifitamab rilsodotin (UpRi, Mersana)</strong> — NaPi2b ADC with auristatin payload. UPGRADE-A Ph3 (ovarian cancer) terminated due to futility in 2023. Safety concerns included ocular toxicity and thrombocytopenia.</li>
+  <li><strong>XMT-1592 (Mersana)</strong> — Second-generation NaPi2b ADC with DOLA payload. Discontinued after UpRi failure.</li>
+</ul>
+<p>TUB-040 differentiates through its exatecan payload (topoisomerase I inhibitor, same class as Enhertu's DXd) and P5® conjugation — potentially avoiding the ocular toxicity and narrow TI that affected UpRi.</p>
+
+<p class="source">Source: Mersana Therapeutics SEC filings; ClinicalTrials.gov; PubMed PMID 40667801</p>
+</div>
+
+<div class="content-page">
+<h1>4. Strategic Positioning</h1>
+
+<h2>4.1 Key Catalysts</h2>
+<table>
+  <tr><th>Event</th><th>Timeline</th><th>Impact</th></tr>
+  <tr><td>TUB-040 (NAPISTAR 1-01) Ph1 dose-escalation data</td><td>2026-2027</td><td>First clinical proof-of-concept for P5® platform</td></tr>
+  <tr><td>TUB-030 Ph1 dose-escalation data</td><td>2027</td><td>Platform validation with second target</td></tr>
+  <tr><td>Primary completion TUB-040</td><td><strong>December 2027</strong></td><td>Ph1/2 completion with ORR data</td></tr>
+  <tr><td>Primary completion TUB-030</td><td><strong>December 2028</strong></td><td>Ph1/2 completion</td></tr>
+</table>
+
+<h2>4.2 Strategic Recommendations</h2>
+
+<div class="key-finding"><strong>1. First Clinical Data is Everything.</strong> As a private platform company, TUB-040's first clinical data will determine Tubulis's valuation and BD partnering potential. Every resource should be focused on delivering clean safety + preliminary efficacy data from NAPISTAR 1-01.</div>
+
+<div class="key-finding"><strong>2. NaPi2b Requires Cautious Optimism.</strong> The target is validated (high expression, known biology) but the precedent of UpRi's failure means investors and partners will scrutinize TUB-040's therapeutic index carefully. Data showing a wider TI than UpRi would be highly differentiating.</div>
+
+<div class="key-finding"><strong>3. Platform Story Needs Clinical Proof.</strong> P5® technology is scientifically compelling, but the ADC landscape is littered with promising platforms that failed to translate. TUB-030's undisclosed target provides a second shot at platform validation — its selection is a critical strategic decision.</div>
+
+<div class="key-finding"><strong>4. BD Partnering Window is Now.</strong> Large pharma is actively seeking next-generation ADC platforms (Pfizer/Seagen, AbbVie/ImmunoGen, Merck/Kelun). Tubulis should proactively engage potential partners while the P5® story is still early enough to command platform-level premiums.</div>
+
+</div>
+
+<div class="content-page">
+<h1>5. Key Takeaways for Dr. Dominik Schumacher</h1>
+
+<div class="key-finding"><strong>1. Platform First, Assets Second.</strong> P5® is Tubulis's core value driver. Every clinical data point should be framed as platform validation, not just asset-level progress.</div>
+
+<div class="key-finding"><strong>2. NaPi2b is a High-Risk, High-Reward Target.</strong> The target is well-validated but carries the UpRi overhang. TUB-040's exatecan payload and P5® stability are credible differentiators — but convincing the market will require head-to-head context.</div>
+
+<div class="key-finding"><strong>3. Two Assets Halve the Risk.</strong> Having TUB-030 with an undisclosed target in parallel FiH trials is strategically sound. Even if one program hits a toxicity issue, the other can carry the platform story forward.</div>
+
+<div class="key-finding"><strong>4. The ADC Gold Rush Creates a Partnering Window.</strong> Current BD appetite for ADC platforms is at an all-time high (Pfizer/Seagen $43B, AbbVie/ImmunoGen $10B, Merck/Kelun $13B). Tubulis should capitalize on this window with a proactive partnering strategy.</div>
+
+<div class="key-finding"><strong>5. Cash Runway Requires Discipline.</strong> With Series B closed in 2023 and two Ph1/2 trials running, cash management is critical. The €55M from 2023 is likely 3-4 years of runway — leaving 1-2 years before Series C or BD partnership needs to close.</div>
+
+</div>
+
+</body>
+</html>

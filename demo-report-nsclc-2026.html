@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page {
+    size: A4;
+    margin: 2.5cm 2cm 2.5cm 3cm;
+    @top-left {
+      content: "CONFIDENTIAL — drug-pipeline-mcp";
+      font-family: "Liberation Sans", "Arial", "Helvetica", sans-serif;
+      font-size: 7pt;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    @top-right {
+      content: "May 2026";
+      font-family: "Liberation Sans", "Arial", "Helvetica", sans-serif;
+      font-size: 7pt;
+      color: #888;
+    }
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: "Liberation Sans", "Arial", "Helvetica", sans-serif;
+      font-size: 7pt;
+      color: #888;
+    }
+    @bottom-left {
+      content: "CONFIDENTIAL";
+      font-family: "Liberation Sans", "Arial", "Helvetica", sans-serif;
+      font-size: 7pt;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  }
+  @page :first {
+    @top-left { content: none; }
+    @top-right { content: none; }
+    @bottom-left { content: none; }
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: "Liberation Sans", "Arial", "Helvetica", sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.55;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ===== COVER PAGE ===== */
+  .cover-page {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 90vh;
+    padding-top: 3cm;
+  }
+  .cover-page .tag {
+    font-size: 8pt;
+    color: #1a237e;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 2cm;
+    font-weight: 700;
+  }
+  .cover-page h1 {
+    font-size: 28pt;
+    color: #1a237e;
+    margin: 0 0 8pt 0;
+    line-height: 1.15;
+    font-weight: 900;
+  }
+  .cover-page .subtitle {
+    font-size: 14pt;
+    color: #555;
+    margin: 0 0 1.5cm 0;
+    font-weight: 300;
+    line-height: 1.4;
+  }
+  .cover-page .meta {
+    margin-top: auto;
+    border-top: 3px solid #1a237e;
+    padding-top: 12pt;
+    font-size: 9pt;
+    color: #555;
+  }
+  .cover-page .meta table { border: none; width: 100%; }
+  .cover-page .meta td { padding: 2pt 0; border: none; vertical-align: top; }
+  .cover-page .meta .label { color: #1a237e; font-weight: 700; width: 100pt; }
+
+  /* ===== SECTION HEADERS ===== */
+  h2 {
+    font-size: 14pt;
+    color: #1a237e;
+    border-bottom: 2.5px solid #1a237e;
+    padding-bottom: 4pt;
+    margin-top: 28pt;
+    margin-bottom: 12pt;
+    page-break-after: avoid;
+    font-weight: 800;
+  }
+  h3 {
+    font-size: 11pt;
+    color: #283593;
+    margin-top: 16pt;
+    margin-bottom: 6pt;
+    page-break-after: avoid;
+    font-weight: 700;
+  }
+  h4 {
+    font-size: 10pt;
+    color: #3949ab;
+    margin-top: 12pt;
+    margin-bottom: 4pt;
+    page-break-after: avoid;
+    font-weight: 700;
+  }
+
+  p { margin: 0 0 8pt 0; text-align: justify; }
+
+  /* ===== TABLES ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10pt 0 14pt 0;
+    font-size: 8.5pt;
+    page-break-inside: avoid;
+  }
+  th {
+    background-color: #1a237e;
+    color: white;
+    padding: 6pt 5pt;
+    text-align: left;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td {
+    padding: 4pt 5pt;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background-color: #f5f5ff; }
+  tr:hover td { background-color: #e8eaf6; }
+
+  /* Highlight table = styled like a chart */
+  .highlight-table td:first-child {
+    font-weight: 600;
+    color: #1a237e;
+  }
+
+  /* ===== CALLOUT BOXES ===== */
+  .callout {
+    background: #e8eaf6;
+    border-left: 4px solid #1a237e;
+    padding: 10pt 12pt;
+    margin: 12pt 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+  }
+  .callout strong { color: #1a237e; }
+
+  /* ===== PAGE BREAKS ===== */
+  .page-break { page-break-before: always; }
+
+  /* ===== EXECUTIVE SUMMARY ===== */
+  .exec-summary {
+    font-size: 9.5pt;
+  }
+  .exec-summary .kpi-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8pt;
+    margin: 12pt 0;
+  }
+  .exec-summary .kpi-box {
+    flex: 1 1 22%;
+    background: #f5f5ff;
+    border: 1px solid #c5cae9;
+    padding: 8pt;
+    text-align: center;
+    min-width: 100pt;
+  }
+  .exec-summary .kpi-box .num {
+    font-size: 16pt;
+    font-weight: 900;
+    color: #1a237e;
+    display: block;
+  }
+  .exec-summary .kpi-box .desc {
+    font-size: 7pt;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ===== FOOTER NOTE ===== */
+  .footer-note {
+    margin-top: 20pt;
+    padding-top: 8pt;
+    border-top: 1px solid #ccc;
+    font-size: 7pt;
+    color: #888;
+  }
+
+  /* Key Takeaways list */
+  .takeaway {
+    background: #f5f5ff;
+    border-left: 4px solid #1a237e;
+    padding: 8pt 10pt;
+    margin: 8pt 0;
+    page-break-inside: avoid;
+  }
+  .takeaway strong {
+    color: #1a237e;
+    display: block;
+    font-size: 10pt;
+    margin-bottom: 2pt;
+  }
+
+  /* Rating bar */
+  .rating-bar {
+    display: inline-block;
+    width: 50pt;
+    height: 6pt;
+    background: #e0e0e0;
+    vertical-align: middle;
+    margin-right: 4pt;
+  }
+  .rating-fill {
+    height: 100%;
+    background: #1a237e;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== COVER PAGE ===== -->
+<div class="cover-page">
+  <div class="tag">Drug Pipeline Intelligence Report</div>
+  <h1>Non-Small Cell Lung Cancer<br>Pipeline Landscape 2026</h1>
+  <div class="subtitle">
+    Comprehensive Competitive Intelligence &amp; Strategic Analysis<br>
+    of the EU-Approved and Emerging NSCLC Therapeutic Landscape
+  </div>
+  <div class="meta">
+    <table>
+      <tr><td class="label">Prepared for</td><td>Dr. Jason Loveridge, CEO — 4SC AG</td></tr>
+      <tr><td class="label">Report Type</td><td>Pipeline Intelligence — Commercial in Confidence</td></tr>
+      <tr><td class="label">Date</td><td>May 2026</td></tr>
+      <tr><td class="label">Data Sources</td><td>EMA Human Medicines Register, ClinicalTrials.gov, openFDA FAERS, FDA Drugs@FDA, PubMed</td></tr>
+      <tr><td class="label">Classification</td><td>CONFIDENTIAL — drug-pipeline-mcp</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== TABLE OF CONTENTS ===== -->
+<div class="page-break"></div>
+<h2>Table of Contents</h2>
+<table class="highlight-table">
+  <tr><td width="20pt">1.</td><td>Executive Summary</td><td width="60pt" align="right">3</td></tr>
+  <tr><td>2.</td><td>EU Approved Drugs for NSCLC</td><td align="right">4</td></tr>
+  <tr><td>3.</td><td>Phase 3 Clinical Trial Landscape</td><td align="right">6</td></tr>
+  <tr><td>4.</td><td>Emerging Mechanisms of Action</td><td align="right">7</td></tr>
+  <tr><td>5.</td><td>Company Competitive Landscape</td><td align="right">8</td></tr>
+  <tr><td>6.</td><td>Keytruda vs. Tagrisso — Head-to-Head Benchmark</td><td align="right">9</td></tr>
+  <tr><td>7.</td><td>Regulatory Outlook &amp; Market Access</td><td align="right">10</td></tr>
+  <tr><td>8.</td><td>Key Takeaways &amp; Strategic Recommendations</td><td align="right">11</td></tr>
+</table>
+<p style="font-size:8pt; color:#888;">This report contains commercially sensitive information. Do not distribute outside of 4SC AG without prior authorisation.</p>
+
+<!-- ===== 1. EXECUTIVE SUMMARY ===== -->
+<div class="page-break"></div>
+<h2>1. Executive Summary</h2>
+
+<div class="exec-summary">
+<p>The non-small cell lung cancer (NSCLC) therapeutic market remains the largest oncology segment globally, with >2.2 million new cases annually and a market value projected to exceed <strong>$45 billion</strong> by 2028. The treatment paradigm continues to fragment along biomarker-defined subpopulations — EGFR, ALK, ROS1, KRAS G12C, PD-L1, and emerging targets — creating both opportunities and complexity for drug developers.</p>
+
+<div class="kpi-grid">
+  <div class="kpi-box">
+    <span class="num">32</span>
+    <span class="desc">EU-Approved NSCLC Drugs</span>
+  </div>
+  <div class="kpi-box">
+    <span class="num">7</span>
+    <span class="desc">Active Phase 3 Trials</span>
+  </div>
+  <div class="kpi-box">
+    <span class="num">$25B</span>
+    <span class="desc">Keytruda 2025 Revenue</span>
+  </div>
+  <div class="kpi-box">
+    <span class="num">13</span>
+    <span class="desc">Mechanism Classes in Play</span>
+  </div>
+</div>
+
+<h3>2026 Landscape: Five Key Themes</h3>
+
+<p><strong>1. Immunotherapy Dominance Intensifies.</strong> PD-(L)1 checkpoint inhibitors (pembrolizumab, nivolumab, durvalumab, atezolizumab) anchor first-line therapy across PD-L1 strata. Keytruda alone generated approximately $25 billion in 2025, representing roughly 55% of Merck/MSD’s pharmaceutical revenue. The subcutaneous reformulation (Keytruda QLEX, co-formulated with hyaluronidase) received FDA approval in early 2026, signalling a shift toward patient-friendly administration that could expand the addressable market.</p>
+
+<p><strong>2. KRAS G12C Validation Creates a New Drug Class.</strong> The approvals of sotorasib (Lumykras, Amgen) and adagrasib (Krazati, BMS/Mirati) in the EU represent the first targeted therapies for the historically ‘undruggable’ KRAS G12C mutation, which occurs in approximately 13% of NSCLC adenocarcinomas. A new generation of KRAS G12C inhibitors (divarasib, olomorasib) and G12D-directed agents is advancing through late-stage development.</p>
+
+<p><strong>3. Antibody-Drug Conjugates Reshape the Cytotoxic Backbone.</strong> TROP2-directed ADCs (Dato-DXd, AstraZeneca/Daiichi Sankyo; T-DXd, Daiichi Sankyo) are challenging platinum-based chemotherapy in non-squamous NSCLC. The TROPION-Lung10 Phase 3 trial (NCT06357533) is evaluating Dato-DXd in combination with the novel PD-1/TIGIT bispecific rilvegostomig, representing a potential chemotherapy-free first-line option for PD-L1-high patients.</p>
+
+<p><strong>4. Bispecific Antibodies Emerge as a Major Modality.</strong> Volrustomig (MEDI5752, AstraZeneca) — a PD-1/CTLA-4 bispecific — is being investigated in the eVOLVE-Lung02 Phase 3 trial (NCT05984277, n=1,200) against pembrolizumab plus chemotherapy. Ivonescimab (PD-1/VEGF bispecific) has demonstrated compelling data in Chinese trials. These agents aim to improve upon the checkpoint inhibitor efficacy ceiling.</p>
+
+<p><strong>5. Regulatory and Pricing Headwinds Mount.</strong> The US Inflation Reduction Act (IRA) imposes a 7-year small-molecule pricing penalty that directly impacts KRAS inhibitors. German AMNOG assessments continue to constrain launch pricing. China’s NRDL negotiation process is driving significant discounts for global drugs. The subcutaneous (SC) revolution in immunotherapy delivery may mitigate some access barriers but requires significant manufacturing investment.</p>
+</div>
+
+<!-- ===== 2. EU APPROVED DRUGS ===== -->
+<div class="page-break"></div>
+<h2>2. EU Approved Drugs for NSCLC</h2>
+
+<p>The European Medicines Agency (EMA) has authorised a wide range of therapies spanning chemotherapy, targeted therapies (TKIs), immunotherapies (checkpoint inhibitors), and emerging modalities. Below is a detailed analysis of the key approved drugs relevant to current NSCLC management.</p>
+
+<h3>2.1 Targeted Therapies — EGFR Inhibitors</h3>
+<table>
+<tr><th>Brand Name</th><th>Active Substance</th><th>ATC Code</th><th>Mechanism of Action</th><th>Indication (NSCLC)</th><th>EU Status</th></tr>
+<tr>
+  <td><strong>Tagrisso</strong></td>
+  <td>Osimertinib</td>
+  <td>L01XE</td>
+  <td>Third-generation EGFR TKI; irreversible inhibitor of EGFR-sensitising and T790M resistance mutations. Selective for mutant EGFR over wild-type.</td>
+  <td>Adjuvant (Stage IB–IIIA), first-line advanced/metastatic EGFRm (ex19del, L858R), second-line T790M+</td>
+  <td>Authorised (Accelerated Assessment)</td>
+</tr>
+<tr>
+  <td><strong>Giotrif</strong></td>
+  <td>Afatinib</td>
+  <td>L01XE13</td>
+  <td>Second-generation pan-ErbB TKI; irreversible inhibitor of EGFR, HER2, and ErbB4</td>
+  <td>First-line advanced EGFRm NSCLC</td>
+  <td>Authorised</td>
+</tr>
+<tr>
+  <td><strong>Aumseqa</strong></td>
+  <td>Aumolertinib</td>
+  <td>L01EB</td>
+  <td>Third-generation EGFR TKI; mutant-selective with improved CNS penetration</td>
+  <td>First-line advanced EGFRm (ex19del, L858R) and T790M+ second-line</td>
+  <td>Authorised</td>
+</tr>
+<tr>
+  <td><strong>Lazcluze</strong></td>
+  <td>Lazertinib + Amivantamab</td>
+  <td>L01EB09</td>
+  <td>Third-generation EGFR TKI (lazertinib) + EGFR/MET bispecific antibody (amivantamab); combination overcomes resistance mechanisms</td>
+  <td>First-line advanced EGFRm (ex19del, L858R)</td>
+  <td>Authorised (Additional Monitoring)</td>
+</tr>
+</table>
+
+<h3>2.2 Targeted Therapies — ALK, ROS1, KRAS</h3>
+<table>
+<tr><th>Brand Name</th><th>Active Substance</th><th>ATC Code</th><th>Mechanism of Action</th><th>Indication (NSCLC)</th><th>EU Status</th></tr>
+<tr>
+  <td><strong>Alecensa</strong></td>
+  <td>Alectinib</td>
+  <td>L01ED03</td>
+  <td>Second-generation ALK TKI; potent and highly selective ALK inhibitor with CNS activity</td>
+  <td>Adjuvant (resected ALK+), first-line advanced ALK+ NSCLC</td>
+  <td>Authorised (Additional Monitoring)</td>
+</tr>
+<tr>
+  <td><strong>Alunbrig</strong></td>
+  <td>Brigatinib</td>
+  <td>L01XE43</td>
+  <td>Second-generation ALK/ROS1 TKI; potent against multiple ALK resistance mutations</td>
+  <td>First-line advanced ALK+ NSCLC</td>
+  <td>Authorised</td>
+</tr>
+<tr>
+  <td><strong>Augtyro</strong></td>
+  <td>Repotrectinib</td>
+  <td>L01EX28</td>
+  <td>Next-generation ROS1/TRK TKI; macrocyclic inhibitor with activity against resistance mutations (e.g., ROS1 G2032R)</td>
+  <td>ROS1-positive advanced NSCLC; NTRK+ solid tumours</td>
+  <td>Authorised (Conditional Approval)</td>
+</tr>
+<tr>
+  <td><strong>Lumykras</strong></td>
+  <td>Sotorasib</td>
+  <td>L01XX73</td>
+  <td>First-in-class KRAS G12C inhibitor; irreversibly binds to the G12C mutant protein in its inactive GDP-bound state</td>
+  <td>Advanced KRAS G12C+ NSCLC after ≥1 prior systemic therapy</td>
+  <td>Authorised (Conditional Approval)</td>
+</tr>
+<tr>
+  <td><strong>Krazati</strong></td>
+  <td>Adagrasib</td>
+  <td>L01XX77</td>
+  <td>KRAS G12C inhibitor with long half-life (~23h) and CNS penetration; designed to maintain target inhibition throughout dosing interval</td>
+  <td>Advanced KRAS G12C+ NSCLC after ≥1 prior systemic therapy</td>
+  <td>Authorised (Conditional Approval)</td>
+</tr>
+</table>
+
+<h3>2.3 Immunotherapies — Checkpoint Inhibitors</h3>
+<table>
+<tr><th>Brand Name</th><th>Active Substance</th><th>ATC Code</th><th>Mechanism of Action</th><th>NSCLC Indications</th><th>EU Status</th></tr>
+<tr>
+  <td><strong>Keytruda</strong></td>
+  <td>Pembrolizumab</td>
+  <td>L01FF02</td>
+  <td>Humanised anti-PD-1 IgG4 monoclonal antibody; blocks PD-1/PD-L1 interaction, restoring anti-tumour T-cell activity</td>
+  <td>First-line monotherapy (PD-L1 ≥50%), first-line combination with chemo (non-squamous, squamous), second-line monotherapy</td>
+  <td>Authorised</td>
+</tr>
+<tr>
+  <td><strong>Imfinzi</strong></td>
+  <td>Durvalumab</td>
+  <td>L01XC28</td>
+  <td>Human anti-PD-L1 IgG1 monoclonal antibody; blocks PD-L1 binding to PD-1 and CD80</td>
+  <td>Peri-operative (neoadjuvant+adjuvant) for resectable NSCLC, consolidation after chemoradiation (Stage III PACIFIC regimen)</td>
+  <td>Authorised</td>
+</tr>
+<tr>
+  <td><strong>Cejemly</strong></td>
+  <td>Sugemalimab</td>
+  <td>L01FF11</td>
+  <td>Full-length anti-PD-L1 IgG4 monoclonal antibody; blocks PD-L1/PD-1 interaction</td>
+  <td>First-line metastatic NSCLC (non-squamous and squamous) in combination with platinum-based chemo</td>
+  <td>Authorised</td>
+</tr>
+</table>
+
+<h3>2.4 Chemotherapy &amp; Other Agents</h3>
+<table>
+<tr><th>Brand Name</th><th>Active Substance</th><th>ATC Code</th><th>Mechanism</th><th>NSCLC Role</th><th>EU Status</th></tr>
+<tr>
+  <td><strong>Alimta</strong></td>
+  <td>Pemetrexed</td>
+  <td>L01BA04</td>
+  <td>Antifolate antimetabolite; inhibits thymidylate synthase, dihydrofolate reductase, and glycinamide ribonucleotide formyltransferase</td>
+  <td>First-line combination (non-squamous), maintenance therapy</td>
+  <td>Authorised</td>
+</tr>
+</table>
+
+<div class="callout">
+<strong>Key Insight:</strong> The EU-approved landscape reveals a clear stratification by biomarker: EGFR-mutant patients have the most options (osimertinib, aumolertinib, lazertinib+amivantamab, afatinib); ALK-positive patients have highly effective sequential options (alectinib, brigatinib, lorlatinib); and KRAS G12C patients now have two conditional approvals. PD-L1 expression remains the key stratifier for immunotherapy access.
+</div>
+
+<!-- ===== 3. PHASE 3 LANDSCAPE ===== -->
+<div class="page-break"></div>
+<h2>3. Phase 3 Clinical Trial Landscape</h2>
+
+<p>A total of seven key Phase 3 trials are actively recruiting or in active follow-up for NSCLC, reflecting significant investment in next-generation mechanisms including ADCs, bispecifics, subcutaneous immunotherapy, and KRAS-directed combinations.</p>
+
+<table>
+<tr>
+  <th>NCT ID</th>
+  <th>Trial Name</th>
+  <th>Sponsor</th>
+  <th>Intervention</th>
+  <th>Comparison</th>
+  <th>N</th>
+  <th>Status</th>
+</tr>
+<tr>
+  <td>NCT06123754</td>
+  <td><strong>Envafolimab Phase III</strong></td>
+  <td>3D Medicines</td>
+  <td>Envafolimab (SC PD-L1) + platinum chemo</td>
+  <td>Placebo + chemo</td>
+  <td>390</td>
+  <td>Recruiting</td>
+</tr>
+<tr>
+  <td>NCT06671379</td>
+  <td><strong>SHR-A2009 Phase III</strong></td>
+  <td>Suzhou Suncadia</td>
+  <td>SHR-A2009 (HER3-ADC) monotherapy</td>
+  <td>Platinum-based chemo</td>
+  <td>498</td>
+  <td>Active, not recruiting</td>
+</tr>
+<tr>
+  <td>NCT06357533</td>
+  <td><strong>TROPION-Lung10</strong></td>
+  <td>AstraZeneca / Daiichi</td>
+  <td>Dato-DXd (TROP2-ADC) + Rilvegostomig (PD-1/TIGIT bispecific)</td>
+  <td>Pembrolizumab monotherapy</td>
+  <td>675</td>
+  <td>Recruiting</td>
+</tr>
+<tr>
+  <td>NCT05984277</td>
+  <td><strong>eVOLVE-Lung02</strong></td>
+  <td>AstraZeneca</td>
+  <td>Volrustomig (PD-1/CTLA-4 bispecific) + chemo</td>
+  <td>Pembrolizumab + chemo</td>
+  <td>1,200</td>
+  <td>Active, not recruiting</td>
+</tr>
+<tr>
+  <td>NCT06875310</td>
+  <td><strong>KRYSTAL-4</strong></td>
+  <td>Mirati / BMS</td>
+  <td>Adagrasib + Pembro + Chemo</td>
+  <td>Placebo + Pembro + Chemo</td>
+  <td>630</td>
+  <td>Recruiting</td>
+</tr>
+<tr>
+  <td>NCT06890598</td>
+  <td><strong>SUNRAY-02</strong></td>
+  <td>Eli Lilly / AstraZeneca</td>
+  <td>Olomorasib + Pembro (Part A) or Olomorasib + Durva (Part B)</td>
+  <td>Placebo + IO</td>
+  <td>700</td>
+  <td>Recruiting</td>
+</tr>
+<tr>
+  <td>NCT06497556</td>
+  <td><strong>Krascendo 1</strong></td>
+  <td>Roche / Chugai</td>
+  <td>Divarasib (KRAS G12Ci)</td>
+  <td>Sotorasib or Adagrasib</td>
+  <td>338</td>
+  <td>Active, not recruiting</td>
+</tr>
+</table>
+
+<h3>3.1 Strategic Assessment of Key Trials</h3>
+
+<p><strong>TROPION-Lung10 (NCT06357533):</strong> This is perhaps the most transformative trial in the current NSCLC landscape. By pairing the TROP2-directed ADC Dato-DXd with rilvegostomig (a PD-1/TIGIT bispecific), AstraZeneca is pursuing a <em>chemotherapy-free, doublet biologic</em> first-line regimen for PD-L1-high (TC ≥50%) non-squamous NSCLC. Success would directly challenge Keytruda monotherapy in the highest-value first-line segment. Primary completion expected 2029.</p>
+
+<p><strong>eVOLVE-Lung02 (NCT05984277):</strong> The largest trial in the cohort (n=1,200), comparing volrustomig + chemotherapy vs. pembrolizumab + chemotherapy in PD-L1 <50% mNSCLC. Volrustomig is a PD-1/CTLA-4 bispecific designed to deliver CTLA-4 blockade preferentially to PD-1-expressing T cells, potentially reducing systemic toxicity while improving efficacy. If volrustomig shows a clinically meaningful PFS/OS benefit, it could redefine the standard of care for the PD-L1-low population that represents ~60% of first-line metastatic patients.</p>
+
+<p><strong>KRYSTAL-4 (NCT06875310):</strong> The first Phase 3 trial to combine a KRAS G12C inhibitor (adagrasib) with pembrolizumab and chemotherapy in the first-line setting. This addresses the key question of whether KRAS G12C inhibition can be safely combined with IO given concerns about immune-related adverse events. Enrollment of 630 patients started April 2025.</p>
+
+<p><strong>SUNRAY-02 (NCT06890598):</strong> Eli Lilly’s olomorasib is tested in two distinct settings: adjuvant (with pembrolizumab) and unresectable Stage III (with durvalumab). This positions olomorasib as a KRAS G12C inhibitor that can partner with either PD-1 or PD-L1 axis IO agents, potentially capturing both the peri-operative and consolidation markets.</p>
+
+<p><strong>Krascendo 1 (NCT06497556):</strong> Roche’s divarasib is the first head-to-head KRAS G12C trial, comparing directly against sotorasib and adagrasib. This is a classic “best-in-class” strategy — if divarasib demonstrates superior PFS or tolerability, it could rapidly capture market share from both incumbent KRAS inhibitors.</p>
+
+<div class="callout">
+<strong>Pipeline Signal:</strong> Four of seven key Phase 3 trials involve ADCs or bispecific antibodies, confirming the industry shift beyond simple PD-(L)1 checkpoint blockade. The ADC+bispecific combination (TROPION-Lung10) represents the most novel approach and the highest-risk/highest-reward strategy in the current landscape.
+</div>
+
+<!-- ===== 4. EMERGING MECHANISMS ===== -->
+<div class="page-break"></div>
+<h2>4. Emerging Mechanisms of Action</h2>
+
+<p>Four mechanism classes are driving the next wave of innovation in NSCLC, with more than 45 active clinical trials across Phases 1–3. Below we analyse each category’s scientific rationale, key assets, and clinical outlook.</p>
+
+<h3>4.1 Antibody-Drug Conjugates (ADCs)</h3>
+<table>
+<tr><th>Agent</th><th>Target</th><th>Payload</th><th>Company</th><th>Phase</th><th>Key Features</th></tr>
+<tr>
+  <td><strong>Dato-DXd</strong></td>
+  <td>TROP2</td>
+  <td>DXd (topo I inhibitor)</td>
+  <td>AstraZeneca / Daiichi</td>
+  <td>Phase 3 (TROPION-Lung10)</td>
+  <td>First ADC to show PFS benefit over docetaxel in TROPION-Lung01; chemotherapy-free potential in PD-L1 high</td>
+</tr>
+<tr>
+  <td><strong>T-DXd (Enhertu)</strong></td>
+  <td>HER2</td>
+  <td>DXd (topo I inhibitor)</td>
+  <td>Daiichi Sankyo / AZ</td>
+  <td>Approved (HER2 mutant)</td>
+  <td>Approved for HER2-mutant NSCLC; DESTINY-Lung02 showed ORR 57.7%</td>
+</tr>
+<tr>
+  <td><strong>SHR-A2009</strong></td>
+  <td>HER3</td>
+  <td>Topo I inhibitor</td>
+  <td>Suzhou Suncadia / Hengrui</td>
+  <td>Phase 3 (NCT06671379)</td>
+  <td>Targeting EGFR TKI-resistant patients with HER3 expression; an EGFR-independent resistance bypass mechanism</td>
+</tr>
+</table>
+
+<p><strong>Assessment:</strong> ADCs represent the most significant therapeutic innovation in NSCLC since checkpoint inhibitors. The TROP2 target is particularly attractive due to high and uniform expression in non-squamous NSCLC. The key question is whether ADC+IO combinations can replace chemotherapy as the backbone of first-line treatment. Interstitial lung disease (ILD) remains a class-specific safety concern, particularly for Asian populations.</p>
+
+<h3>4.2 Bispecific Antibodies</h3>
+<table>
+<tr><th>Agent</th><th>Targets</th><th>Company</th><th>Phase</th><th>Mechanism Rationale</th></tr>
+<tr>
+  <td><strong>Volrustomig</strong></td>
+  <td>PD-1 / CTLA-4</td>
+  <td>AstraZeneca</td>
+  <td>Phase 3 (eVOLVE-Lung02)</td>
+  <td>Conditionally activates CTLA-4 blockade only at PD-1-expressing T cells; reduced systemic irAE risk vs. combination IPI+NIVO</td>
+</tr>
+<tr>
+  <td><strong>Rilvegostomig</strong></td>
+  <td>PD-1 / TIGIT</td>
+  <td>AstraZeneca</td>
+  <td>Phase 3 (TROPION-Lung10)</td>
+  <td>Dual checkpoint blockade targeting PD-1 and TIGIT pathways; TIGIT blockade enhances NK and T-cell activity</td>
+</tr>
+<tr>
+  <td><strong>Ivonescimab (AK112)</strong></td>
+  <td>PD-1 / VEGF</td>
+  <td>Akeso</td>
+  <td>Phase 3 (China)</td>
+  <td>Combines anti-angiogenesis with checkpoint blockade in a single molecule; positive Phase 2 data in PD-L1+ NSCLC</td>
+</tr>
+</table>
+
+<p><strong>Assessment:</strong> Bispecific antibodies are poised to improve upon the efficacy ceiling of single-agent PD-(L)1 blockade. The key differentiation among bispecifics is the second target choice: CTLA-4 (driving T-cell priming), TIGIT (enhancing effector function), or VEGF (normalising tumour vasculature). Volrustomig’s conditional activation design is particularly elegant from a safety perspective.</p>
+
+<h3>4.3 KRAS G12C and G12D Inhibitors</h3>
+<table>
+<tr><th>Agent</th><th>Target</th><th>Company</th><th>Development Stage</th><th>Differentiation</th></tr>
+<tr>
+  <td><strong>Sotorasib</strong></td>
+  <td>KRAS G12C</td>
+  <td>Amgen</td>
+  <td>Approved (EU, US)</td>
+  <td>First-in-class; CodeBreaK 200 confirmed PFS benefit vs. docetaxel; Phase 3 adjuvant trials ongoing</td>
+</tr>
+<tr>
+  <td><strong>Adagrasib</strong></td>
+  <td>KRAS G12C</td>
+  <td>BMS (Mirati)</td>
+  <td>Approved (EU, US)</td>
+  <td>Longer half-life; CNS penetration; KRYSTAL-1 showed intracranial activity; KRYSTAL-4 (1L combo with Pembro)</td>
+</tr>
+<tr>
+  <td><strong>Divarasib</strong></td>
+  <td>KRAS G12C</td>
+  <td>Roche</td>
+  <td>Phase 3 (Krascendo 1)</td>
+  <td>~2x more potent than sotorasib/adagrasib in preclinical models; head-to-head Phase 3 vs. both incumbents</td>
+</tr>
+<tr>
+  <td><strong>Olomorasib</strong></td>
+  <td>KRAS G12C</td>
+  <td>Eli Lilly</td>
+  <td>Phase 3 (SUNRAY-02)</td>
+  <td>Best-in-class potency; CNS penetrant; partnered with both Pembro and Durva in peri-operative/consolidation settings</td>
+</tr>
+</table>
+
+<p><strong>Assessment:</strong> The KRAS G12C space is rapidly transitioning from first-in-class to best-in-class competition. The emergence of head-to-head trials (Krascendo 1) and first-line combinations with immunotherapy (KRYSTAL-4, SUNRAY-02) will define the competitive hierarchy. KRAS G12D inhibitors (e.g., RMC-9805, Revolution Medicines) represent the next frontier, targeting a mutation present in ~4–6% of NSCLC.</p>
+
+<h3>4.4 Subcutaneous Immunotherapy</h3>
+<table>
+<tr><th>Agent</th><th>Company</th><th>Status</th><th>Significance</th></tr>
+<tr>
+  <td><strong>Keytruda QLEX</strong></td>
+  <td>Merck/MSD</td>
+  <td>FDA Approved (2026)</td>
+  <td>Pembrolizumab + hyaluronidase; 2–3 min SC injection vs. 30 min IV; expands outpatient and community administration</td>
+</tr>
+<tr>
+  <td><strong>Opdivo QVANTIG</strong></td>
+  <td>BMS</td>
+  <td>FDA Approved (2025)</td>
+  <td>Nivolumab + hyaluronidase; 3–5 min SC injection; CheckMate-67T confirmed non-inferior PK and efficacy</td>
+</tr>
+<tr>
+  <td><strong>Envafolimab (SC PD-L1)</strong></td>
+  <td>3D Medicines</td>
+  <td>Phase 3 (NCT06123754)</td>
+  <td>Subcutaneous anti-PD-L1; neoadjuvant/adjuvant resectable Stage III NSCLC; potential to democratise IO access</td>
+</tr>
+</table>
+
+<p><strong>Assessment:</strong> Subcutaneous IO formulations address a critical access bottleneck — the infusion chair constraint. Converting checkpoint inhibitors from IV to SC could increase patient throughput 5–10x per infusion centre, reduce chair time costs (~$400–$1,200 per infusion), and enable administration in community settings without dedicated oncology infusion suites.</p>
+
+<!-- ===== 5. COMPANY COMPETITIVE LANDSCAPE ===== -->
+<div class="page-break"></div>
+<h2>5. Company Competitive Landscape</h2>
+
+<p>The NSCLC competitive landscape is dominated by five major players — Merck/MSD, AstraZeneca, BMS, Roche, and Johnson & Johnson — with Amgen and Eli Lilly emerging as important challengers in the KRAS G12C space.</p>
+
+<h3>5.1 Competitive Positioning Matrix</h3>
+<table>
+<tr><th>Company</th><th>Key NSCLC Assets</th><th>2025 Est. NSCLC Revenue</th><th>Strategic Position</th><th>Pipeline Strength</th></tr>
+<tr>
+  <td><strong>Merck/MSD</strong></td>
+  <td>Keytruda (pembrolizumab), Keytruda QLEX</td>
+  <td>~$25B (total Keytruda; ~$16B NSCLC)</td>
+  <td><strong>Market Leader</strong> — dominant in 1L PD-L1≥50% monotherapy and 1L combo across histologies</td>
+  <td>Moderate — Keytruda patent cliff 2028; pipeline diversification needed</td>
+</tr>
+<tr>
+  <td><strong>AstraZeneca</strong></td>
+  <td>Tagrisso, Imfinzi, Dato-DXd (with Daiichi), Volrustomig, Rilvegostomig</td>
+  <td>~$10B (Tagrisso ~$6B, Imfinzi ~$4B)</td>
+  <td><strong>Broadest NSCLC Portfolio</strong> — covers EGFR, IO, ADCs, bispecifics; peri-operative and consolidation leadership</td>
+  <td>Very Strong — deepest early and late-stage pipeline; potential for Tagrisso+Dato-DXd+Volrustomig combo franchise</td>
+</tr>
+<tr>
+  <td><strong>Bristol-Myers Squibb</strong></td>
+  <td>Opdivo (nivolumab), Opdivo QVANTIG, Krazati (adagrasib, via Mirati acquisition)</td>
+  <td>~$6B (Opdivo $4.5B, Krazati ~$400M)</td>
+  <td><strong>Dual IO+KRAS Strategy</strong> — Opdivo declining with Keytruda competition; Krazati provides targeted therapy anchor</td>
+  <td>Moderate — KRYSTAL-4 (1L Pembro combo) is pivotal; QVANTIG helps defend Opdivo franchise</td>
+</tr>
+<tr>
+  <td><strong>Roche</strong></td>
+  <td>Tecentriq (atezolizumab), Divarasib (KRAS G12C, Phase 3)</td>
+  <td>~$2.5B (Tecentriq declining ~15% YoY)</td>
+  <td><strong>Retrenching</strong> — Tecentriq lost 1L NSCLC market share to Keytruda; divarasib is key pipeline hope</td>
+  <td>Moderate — Krascendo 1 head-to-head vs. sotorasib/adagrasib could revive NSCLC franchise</td>
+</tr>
+<tr>
+  <td><strong>Johnson & Johnson</strong></td>
+  <td>Lazcluze (lazertinib+amivantamab)</td>
+  <td>~$1.2B (growing rapidly)</td>
+  <td><strong>Emerging EGFR Challenger</strong> — disrupting AZ’s Tagrisso monopoly in first-line EGFRm</td>
+  <td>Strong — MARIPOSA data showed Lazcluze superiority over Tagrisso; label expansion likely</td>
+</tr>
+<tr>
+  <td><strong>Amgen</strong></td>
+  <td>Lumykras (sotorasib)</td>
+  <td>~$800M</td>
+  <td><strong>KRAS Pioneer</strong> — first-in-class advantage eroding as next-gen KRAS inhibitors advance</td>
+  <td>Limited beyond sotorasib; CodeBreaK trials continue but competition intensifying</td>
+</tr>
+<tr>
+  <td><strong>Eli Lilly</strong></td>
+  <td>Olomorasib (KRAS G12C, Phase 3)</td>
+  <td>~$0 (pre-revenue in NSCLC)</td>
+  <td><strong>Entrant</strong> — SUNRAY-02 positions olomorasib as IO-compatible KRAS inhibitor</td>
+  <td>Strong (NSCLC) — partnered with AZ for peri-operative/consolidation trials; best-in-class strategy</td>
+</tr>
+</table>
+
+<h3>5.2 Competitive Dynamics Analysis</h3>
+
+<p><strong>Merck/MSD</strong> faces the most significant long-term risk despite current dominance. Keytruda’s primary patent expires in 2028, and the pipeline beyond Keytruda (aside from subcutaneous reformulation) is relatively thin in NSCLC. The company’s strategy hinges on expanding Keytruda into every possible combination and setting before the patent cliff.</p>
+
+<p><strong>AstraZeneca</strong> has assembled the deepest and most diversified NSCLC portfolio. The combination of Tagrisso (EGFR), Imfinzi (PD-L1), Dato-DXd (TROP2 ADC), and volrustomig/rilvegostomig (bispecifics) provides coverage across essentially all NSCLC patient segments. The company’s ability to develop internal combinations (e.g., Dato-DXd + rilvegostomig) gives it a structural advantage in trial execution. AZ is positioned to become the leading NSCLC company post-2028.</p>
+
+<p><strong>Johnson & Johnson’s</strong> Lazcluze (lazertinib + amivantamab) is the most significant near-term competitive threat to Tagrisso. The MARIPOSA trial demonstrated superiority over osimertinib in first-line EGFR-mutant NSCLC, with a meaningful PFS improvement. JNJ is actively pursuing label expansion and regulatory approvals globally.</p>
+
+<div class="callout">
+<strong>Strategic Insight for 4SC:</strong> The competitive landscape is bifurcating: large players compete across the entire biomarker-defined map, while mid-size biotechs must identify narrow, well-defined niches. The SC IO revolution represents one such niche opportunity — particularly for novel checkpoint inhibitors formulated for SC administration in biomarker-selected populations.
+</div>
+
+<!-- ===== 6. KEYTRUDA VS TAGRISSO BENCHMARK ===== -->
+<div class="page-break"></div>
+<h2>6. Keytruda vs. Tagrisso — Head-to-Head Benchmark</h2>
+
+<p>Keytruda (pembrolizumab) and Tagrisso (osimertinib) are the two highest-grossing oncology drugs globally. While they treat different molecular subsets of NSCLC, a comparative analysis reveals important strategic lessons for drug developers.</p>
+
+<h3>6.1 Side-by-Side Comparison</h3>
+<table>
+<tr><th width="35%">Attribute</th><th width="32.5%">Keytruda (Pembrolizumab)</th><th width="32.5%">Tagrisso (Osimertinib)</th></tr>
+<tr>
+  <td><strong>Mechanism of Action</strong></td>
+  <td>Anti-PD-1 monoclonal antibody; restores T-cell cytotoxicity by blocking PD-1/PD-L1 interaction</td>
+  <td>Third-generation EGFR TKI; irreversible inhibitor of mutant EGFR (sensitising + T790M)</td>
+</tr>
+<tr>
+  <td><strong>Drug Class</strong></td>
+  <td>Immunotherapy (checkpoint inhibitor)</td>
+  <td>Targeted therapy (small molecule TKI)</td>
+</tr>
+<tr>
+  <td><strong>Administration</strong></td>
+  <td>IV infusion 30 min Q3W or Q6W; SC injection (QLEX) 2–3 min</td>
+  <td>Oral tablet 80 mg once daily</td>
+</tr>
+<tr>
+  <td><strong>FDA First Approval</strong></td>
+  <td>4 September 2014 (melanoma); NSCLC: October 2015</td>
+  <td>13 November 2015 (T790M+ NSCLC)</td>
+</tr>
+<tr>
+  <td><strong>EU Approval</strong></td>
+  <td>July 2015 (melanoma); NSCLC initial approval 2016</td>
+  <td>February 2016 (T790M+); December 2018 (1L EGFRm)</td>
+</tr>
+<tr>
+  <td><strong>NSCLC Indications (EU)</strong></td>
+  <td>1L monotherapy PD-L1 ≥50%; 1L combo non-squamous; 1L combo squamous; 2L+ PD-L1 ≥1%</td>
+  <td>Adjuvant Stage IB–IIIA; 1L advanced EGFRm; 2L T790M+; plus chemo in 1L EGFRm (FLAURA2)</td>
+</tr>
+<tr>
+  <td><strong>FAERS Total Reports</strong></td>
+  <td>67,170 (since 2014)</td>
+  <td>23,167 (since 2015)</td>
+</tr>
+<tr>
+  <td><strong>FAERS Serious (Hospitalisation)</strong></td>
+  <td>55,946 (83.3%)</td>
+  <td>21,277 (91.8%)</td>
+</tr>
+<tr>
+  <td><strong>Top FAERS Events</strong></td>
+  <td>Malignant neoplasm progression (8,829), Death (4,345), Diarrhoea (3,624), Fatigue (3,492)</td>
+  <td>Death (9,526), Malignant neoplasm progression (1,930), Diarrhoea (1,210), Fatigue (687)</td>
+</tr>
+<tr>
+  <td><strong>Safety Signals (PRR)</strong></td>
+  <td>Immune-related AEs: colitis, pneumonitis, hepatitis, thyroiditis, hypophysitis</td>
+  <td>ILD/pneumonitis (493 reports), cardiomyopathy, diarrhoea, rash</td>
+</tr>
+<tr>
+  <td><strong>Patent Protection</strong></td>
+  <td>Key patent expires <strong>2028</strong>; paediatric exclusivity may extend to 2029; biosimilar entry expected 2029–2030</td>
+  <td>Composition of matter patent expires <strong>2032</strong> (US); European patent expires ~2031</td>
+</tr>
+<tr>
+  <td><strong>2025 Global Revenue</strong></td>
+  <td><strong>~$25 billion</strong> (total; NSCLC share ~$16B)</td>
+  <td><strong>~$6 billion</strong> (predominantly NSCLC)</td>
+</tr>
+<tr>
+  <td><strong>EGFR/PD-L1 Link</strong></td>
+  <td>Highly effective in PD-L1 ≥50%; limited efficacy in EGFR-mutant patients</td>
+  <td>Only for EGFR-mutant patients (~15–20% of NSCLC in EU/US; ~40% in Asia)</td>
+</tr>
+</table>
+
+<h3>6.2 Strategic Lessons</h3>
+
+<p><strong>1. Patient Selection Is the Highest-Value Activity.</strong> Both drugs demonstrate that precise patient selection (PD-L1 ≥50% for Keytruda monotherapy, EGFR mutation for Tagrisso) drives extraordinary clinical and commercial outcomes. Tagrisso achieves a ~$6B franchise targeting just 15–20% of NSCLC patients — a powerful proof point for biomarker-driven development.</p>
+
+<p><strong>2. Administration Matters More Than Often Acknowledged.</strong> Keytruda’s IV infusion (30 min) is operationally burdensome; the SC QLEX reformulation addresses this directly. Tagrisso’s oral daily dosing is inherently more convenient. The SC revolution (Keytruda QLEX, Opdivo QVANTIG) signals that even dominant drugs must improve the patient experience to fend off competition.</p>
+
+<p><strong>3. The Patent Cliff Is Inevitable.</strong> Keytruda faces a 2028 patent cliff with biosimilar entry expected 2029–2030. The entire $25B franchise must be replaced. Tagrisso has a longer runway to 2032. This creates a ~4-year window where AZ could overtake Merck as the leading NSCLC company, assuming volrustomig and Dato-DXd realise their potential.</p>
+
+<p><strong>4. Safety Profiles Reflect Mechanism.</strong> Keytruda’s FAERS data (67,170 reports) reflects immune-related AEs—colitis, pneumonitis, endocrinopathies—that are mechanistically linked to PD-1 blockade. Tagrisso’s data (23,167 reports) has a high proportion of death reports (9,526; 41%), which likely reflects the advanced disease setting and CNS progression rather than drug toxicity per se. ILD/pneumonitis (493 reports) is the most important Tagrisso-specific safety signal.</p>
+
+<div class="callout">
+<strong>Implication for 4SC:</strong> The combined market value of these two drugs (~$31B in a single disease) illustrates why oncology remains the highest-value therapeutic area. For a mid-size biotech, the strategy is not to compete head-on but to identify niche populations where novel mechanisms can demonstrate meaningful differentiation — ideally with oral or SC administration to capture the convenience premium.
+</div>
+
+<!-- ===== 7. REGULATORY OUTLOOK ===== -->
+<div class="page-break"></div>
+<h2>7. Regulatory Outlook &amp; Market Access</h2>
+
+<p>The regulatory and pricing environment for NSCLC drugs is undergoing profound changes across major markets. Three dynamics — AMNOG in Germany, the US Inflation Reduction Act, and China’s NRDL process — are reshaping commercial viability assessments for new oncology products.</p>
+
+<h3>7.1 Germany: AMNOG — Stricter, Faster, Quantified</h3>
+<p>The German AMNOG (Arzneimittelmarkt-Neuordnungsgesetz) process, which sets the reference price for ~60% of EU pharmaceutical spending, has become increasingly stringent for oncology products. Key 2026 trends:</p>
+<table>
+<tr><th>Trend</th><th>Description</th><th>Impact on NSCLC Drugs</th></tr>
+<tr>
+  <td><strong>Orphan Drug Exemption Erosion</strong></td>
+  <td>IQWiG no longer automatically grants added benefit for orphan drugs if annual revenue exceeds €50M</td>
+  <td>KRAS G12C inhibitors (sotorasib, adagrasib) face tougher negotiations despite orphan designation</td>
+</tr>
+<tr>
+  <td><strong>PFS-to-OS Translation Required</strong></td>
+  <td>G-BA increasingly demands OS data or validated surrogate for added benefit claims</td>
+  <td>ADC trials with immature OS data face uncertainty; may delay market access by 1–2 years</td>
+</tr>
+<tr>
+  <td><strong>Combination Discounting</strong></td>
+  <td>Combination therapies evaluated on incremental benefit vs. standard-of-care; free-rider effect on pricing</td>
+  <td>Dato-DXd + rilvegostomig would need to show combo-specific benefit beyond each component</td>
+</tr>
+<tr>
+  <td><strong>Subcutaneous Premium</strong></td>
+  <td>Healthcare resource utilisation (HCRU) savings from SC vs. IV may justify incremental pricing</td>
+  <td>Positive for Keytruda QLEX, Opdivo QVANTIG, and any SC IO entrant</td>
+</tr>
+</table>
+
+<h3>7.2 United States: Inflation Reduction Act (IRA) — Small-Molecule Penalty</h3>
+<p>The IRA’s Medicare Drug Price Negotiation Program, enacted through the 2022 Inflation Reduction Act, creates a fundamental asymmetry between small molecules and biologics:</p>
+<table>
+<tr><th>Provision</th><th>Small Molecules (e.g., KRAS inhibitors)</th><th>Biologics (e.g., checkpoint inhibitors, ADCs)</th></tr>
+<tr>
+  <td><strong>Exemption from Negotiation</strong></td>
+  <td>Earliest: 7 years post-approval</td>
+  <td>Earliest: 11 years post-approval</td>
+  <td></td>
+</tr>
+<tr>
+  <td><strong>Penalty for Single-Indication Drugs</strong></td>
+  <td><strong>High</strong> — sotorasib has only 1 approved indication; 7-year clock starts at first approval (2021), negotiation begins 2028</td>
+  <td><strong>Lower</strong> — pembrolizumab has >20 indications across multiple cancers; each additional indication delays IRA exposure</td>
+</tr>
+<tr>
+  <td><strong>Estimated Discount (Year 1)</strong></td>
+  <td>25–60% discount on List Price</td>
+  <td>25–60% discount on List Price</td>
+</tr>
+</table>
+
+<p><strong>Critical Implication for KRAS Inhibitors:</strong> Sotorasib (approved 2021) and adagrasib (approved 2022) face IRA price negotiation in 2028 and 2029 respectively. Since both are single-indication drugs in relatively small patient populations (~13% of NSCLC), the revenue impact of a 40–60% discount on US pricing will be substantial. This creates a commercial advantage for multi-indication KRAS inhibitors (divarasib, olomorasib) if they can secure approvals in colorectal, pancreatic, and other KRAS G12C-positive cancers before their 7-year mark.</p>
+
+<h3>7.3 China: NRDL Pricing Pressure</h3>
+<p>The National Reimbursement Drug List (NRDL) negotiation process has become an increasingly important gateway for global oncology drugs. Key 2026 developments:</p>
+<ul style="margin:0 0 10pt 0; padding-left:14pt;">
+  <li><strong>Mandatory 50–70% Discounts:</strong> Recent NRDL negotiations have resulted in 60–75% price reductions for PD-1 inhibitors (e.g., toripalimab, sintilimab, camrelizumab, tislelizumab). Global drugs like osimertinib (Tagrisso) and pembrolizumab (Keytruda) face similar discount expectations.</li>
+  <li><strong>Domestic Competitor Advantage:</strong> Chinese biotechs (BeiGene, Innovent, Junshi, CStone) have developed 6+ domestic PD-(L)1 inhibitors and 3+ EGFR TKIs, all priced 40–70% below global benchmarks. Aumolertinib (Aumseqa) is a Chinese-developed third-generation EGFR TKI already approved in the EU.</li>
+  <li><strong>Volume-for-Price Strategy:</strong> The NRDL’s “volume-for-price” approach works well for large-market drugs (PD-1s, EGFR TKIs) but penalises niche agents (e.g., KRAS G12C inhibitors targeting ~3–4% of Chinese NSCLC patients).</li>
+</ul>
+
+<h3>7.4 The Subcutaneous Revolution — Regulatory and Access Implications</h3>
+<p>The shift from IV to SC checkpoint inhibitors has implications beyond clinical convenience:</p>
+<table>
+<tr><th>Dimension</th><th>Impact</th></tr>
+<tr>
+  <td><strong>Site-of-Care Shift</strong></td>
+  <td>SC administration enables transition from hospital outpatient infusion centres to physician offices, community clinics, and potentially at-home administration — reducing site-of-care costs by 30–60%</td>
+</tr>
+<tr>
+  <td><strong>Reimbursement Codes</strong></td>
+  <td>SC formulations create new J-codes (US) and reimbursement pathways that may carry different margins than IV equivalents; CMS is evaluating site-neutral payment policies</td>
+</tr>
+<tr>
+  <td><strong>Time Savings Value</strong></td>
+  <td>A 3-minute SC injection vs. 30–60 min IV infusion saves ~27–57 minutes per patient visit; at 2M+ NSCLC IO patients annually, this represents ~1–2M infusion chair hours saved</td>
+</tr>
+<tr>
+  <td><strong>Global Access Equity</strong></td>
+  <td>SC formulations eliminate cold-chain IV bag requirements and reduce infusion centre infrastructure needs, potentially expanding access in low- and middle-income countries</td>
+</tr>
+</table>
+
+<div class="callout">
+<strong>Strategic Implication:</strong> The IRA’s small-molecule penalty creates a structural commercial advantage for biologics and antibody-based modalities in the US market. For a mid-size biotech, the optimal strategy may be to develop SC-formulated antibody-based therapies (bispecifics or ADCs) targeting biomarker-defined populations, thereby maximising the regulatory exclusivity window while benefiting from the SC convenience premium.
+</div>
+
+<!-- ===== 8. KEY TAKEAWAYS ===== -->
+<div class="page-break"></div>
+<h2>8. Key Takeaways &amp; Strategic Recommendations</h2>
+
+<p>The following five strategic conclusions are drawn from the analysis above and are specifically framed for a mid-size oncology biotech such as 4SC AG pursuing a precision oncology strategy.</p>
+
+<div class="takeaway">
+<strong>Takeaway 1: The KRAS G12C Window Is Closing — But G12D and Pan-RAS Are Opening.</strong>
+The first-generation KRAS G12C market (sotorasib, adagrasib) is already competitive and facing IRA headwinds. However, the next wave — KRAS G12D inhibitors, pan-RAS inhibitors, and RAS chaperone inhibitors (e.g., SOS1, SHP2) — represents a multi-billion dollar opportunity with limited competition. 4SC should evaluate in-licensing or internal discovery targets in the KRAS G12D or RAS pathway inhibitor space, where the competitive field is more open and biomarker selection is well defined.
+</div>
+
+<div class="takeaway">
+<strong>Takeaway 2: Subcutaneous IO Formulation Is an Underserved Niche for Mid-Size Biotechs.</strong>
+The SC reformulation of Keytruda and Opdivo validates the market demand for convenient immunotherapy delivery. However, the SC format for novel bispecifics or next-generation checkpoint inhibitors (e.g., anti-TIGIT, anti-LAG-3, anti-CD47) remains largely unaddressed by mid-size players. A SC-formulated, novel checkpoint inhibitor targeting a specific NSCLC subpopulation (e.g., PD-L1-low, STK11-mutant, KEAP1-mutant) could capture meaningful market share without competing head-on with the mega-blockbusters.
+</div>
+
+<div class="takeaway">
+<strong>Takeaway 3: The ADC Renaissance Favours Differentiated Payloads and Targets.</strong>
+TROP2, HER2, and HER3 ADCs are well served by large players (AZ, Daiichi, Roche). However, there are still opportunities in novel targets: CEACAM5, B7-H3, PTK7, and ROR1 are all expressed in NSCLC subsets and lack approved ADCs. A mid-size biotech could compete effectively by identifying a NSCLC-enriched target with a novel payload (e.g., PBD dimer, camptothecin variant) and advancing a Phase 1/2 trial with a companion diagnostic strategy for patient selection.
+</div>
+
+<div class="takeaway">
+<strong>Takeaway 4: The Regulatory Pivot to Biomarker-Defined Adjuvant/Peri-Operative Settings Creates a New Commercial Pathway.</strong>
+The approvals of osimertinib (ADAURA) and durvalumab (AEGEAN) in the peri-operative setting have opened a multi-billion dollar adjuvant NSCLC market that barely existed five years ago. For a mid-size biotech, the most capital-efficient path to approval may be a biomarker-defined adjuvant or peri-operative indication, where trials require fewer patients (300–700 vs. 1,000+) and regulatory timelines are compressed (conditional approval pathways). 4SC’s expertise in biomarker development (e.g., 4SC-202, resminostat) positions the company well for this strategy.
+</div>
+
+<div class="takeaway">
+<strong>Takeaway 5: European Market Access Requires Early Health Technology Assessment Planning.</strong>
+AMNOG and similar EU HTA bodies are demanding more rigorous evidence generation, including PRO data, healthcare resource utilisation data, and mature OS follow-up. For any mid-size biotech developing an NSCLC therapy, the time to engage HTA is <strong>Phase 2</strong>, not Phase 3. 4SC should budget for parallel HTA evidence generation (e.g., time-to-deterioration analyses, EORTC QLQ-C30/LC13, NSCLC-SAQ) in all pivotal trial designs, as the absence of these data contributed to recent AMNOG negotiation failures for several orphan-designated oncology drugs.
+</div>
+
+<div style="margin-top: 24pt;">
+<h3>Summary Assessment</h3>
+<table>
+<tr><th>Dimension</th><th>Assessment</th><th>Opportunity Score</th></tr>
+<tr>
+  <td>KRAS G12C (1L)</td>
+  <td>Crowded, IRA-affected, but large market; best-in-class can still win</td>
+  <td>Medium</td>
+</tr>
+<tr>
+  <td>KRAS G12D / Pan-RAS</td>
+  <td>Early, high unmet need, limited competition</td>
+  <td>High</td>
+</tr>
+<tr>
+  <td>Novel ADC Targets (B7-H3, PTK7, ROR1)</td>
+  <td>Preclinical to Phase 1; high risk/reward</td>
+  <td>Medium-High</td>
+</tr>
+<tr>
+  <td>SC Checkpoint Inhibitors (Novel Targets)</td>
+  <td>Growing market, infrastructure shift underway</td>
+  <td>High</td>
+</tr>
+<tr>
+  <td>Peri-Operative/Adjuvant Biomarker-Defined</td>
+  <td>Regulatory path validated by AZ, JNJ; capital efficient</td>
+  <td>High</td>
+</tr>
+<tr>
+  <td>Bispecifics (PD-1/VEGF, PD-1/TIGIT, PD-1/CTLA-4)</td>
+  <td>Large players dominant; niche bispecific targets possible</td>
+  <td>Low-Medium</td>
+</tr>
+</table>
+</div>
+
+<div class="callout">
+<strong>Conclusion:</strong> The NSCLC landscape in 2026 is simultaneously the most promising and most competitive oncology market in history. For a mid-size biotech like 4SC, the strategy should prioritise biomarker-defined, novel-mechanism assets (KRAS G12D, novel ADC targets, SC IO) in earlier-stage, regulatory-accelerated settings (adjuvant, rare subsets) with early HTA engagement built into the clinical development plan. Avoid direct competition with AZ’s expanding franchise or Merck’s entrenched Keytruda position. Instead, identify the narrow, high-value niches where scientific differentiation and regulatory innovation can overcome scale disadvantages.
+</div>
+
+<div class="footer-note">
+<p><strong>Disclaimer:</strong> This report is prepared for strategic planning purposes only. Data sourced from EMA Human Medicines Register, ClinicalTrials.gov, openFDA FAERS, FDA Drugs@FDA, and PubMed. Revenue estimates are based on publicly available financial reports and analyst consensus. Clinical trial status as of May 2026. This report does not constitute medical advice, investment advice, or a recommendation to develop, acquire, or divest any specific asset.</p>
+<p><strong>CONFIDENTIAL — drug-pipeline-mcp</strong> | Prepared for Dr. Jason Loveridge, CEO, 4SC AG | May 2026</p>
+</div>
+
+</body>
+</html>

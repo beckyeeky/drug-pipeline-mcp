@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><style>
+@page { size: A4; margin: 2.5cm; @top-center { content: "CONFIDENTIAL"; font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #b91c1c; letter-spacing: 3px; } @bottom-center { content: "Page " counter(page); font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #666; } }
+@page:first { @top-center { content: ""; } @bottom-center { content: ""; } margin: 0; }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.55; color: #222; margin: 0; padding: 0; }
+.cover-page { width: 21cm; height: 29.7cm; background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+.cover-page::before { content: ""; position: absolute; top: -50%; right: -30%; width: 60%; height: 100%; background: radial-gradient(ellipse, rgba(220,38,38,0.12) 0%, transparent 70%); }
+.cover-accent-bar { position: absolute; bottom: 4cm; left: 3cm; right: 3cm; height: 3px; background: #fca5a5; }
+.cover-page .cover-label { font-size: 9pt; letter-spacing: 4px; text-transform: uppercase; color: #fca5a5; margin-bottom: 1.5cm; }
+.cover-page h1 { font-size: 22pt; font-weight: 700; margin: 0 2cm 0.8cm 2cm; line-height: 1.25; }
+.cover-page .cover-subtitle { font-size: 13pt; color: rgba(255,255,255,0.85); margin-bottom: 2cm; max-width: 14cm; }
+.cover-page .cover-meta { font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 1cm; }
+.cover-page .cover-meta strong { color: #fca5a5; }
+.disclaimer-page { page-break-after: always; padding-top: 3cm; }
+.disclaimer-page h2 { color: #b91c1c; font-size: 14pt; border-bottom: 2px solid #fca5a5; padding-bottom: 6pt; }
+.disclaimer-page p { font-size: 9pt; color: #555; line-height: 1.6; }
+h1 { color: #b91c1c; font-size: 18pt; margin-top: 0; margin-bottom: 12pt; padding-bottom: 6pt; border-bottom: 3px solid #fca5a5; }
+h2 { color: #b91c1c; font-size: 13pt; margin-top: 20pt; margin-bottom: 8pt; padding-bottom: 3pt; border-bottom: 1px solid #ddd; }
+h3 { color: #333; font-size: 11pt; margin-top: 14pt; margin-bottom: 6pt; }
+.content-page { page-break-before: always; padding: 0; }
+p.source { font-size: 7.5pt; color: #888; margin-top: 2pt; margin-bottom: 6pt; font-style: italic; }
+.key-finding { background: #f5f5f5; border-left: 4px solid #b91c1c; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.key-finding strong { color: #b91c1c; }
+.amber-box { background: #fff8e1; border-left: 4px solid #ff6f00; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.navy-box { background: #fee2e2; border-left: 4px solid #b91c1c; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 8.5pt; }
+table th { background: #b91c1c; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; }
+table td { padding: 5pt 8pt; border-bottom: 1px solid #e0e0e0; }
+table tr:nth-child(even) td { background: #f8f8f8; }
+.exec-summary-item { margin-bottom: 10pt; padding-left: 10pt; border-left: 3px solid #b91c1c; }
+.exec-summary-item strong { color: #b91c1c; }
+ul, ol { font-size: 9.5pt; line-height: 1.5; }
+li { margin-bottom: 3pt; }
+</style></head><body>
+<div class="cover-page"><div class="cover-label">Competitive Intelligence Report</div><h1>TCR-Based Therapies in Solid Tumors</h1><div class="cover-subtitle">Strategic Positioning Analysis for Immatics N.V.</div><div style="margin-top:1cm;"><p style="font-size:11pt;color:rgba(255,255,255,0.9);margin-bottom:0.3cm;">Prepared Exclusively for</p><p style="font-size:14pt;font-weight:700;margin:0;">Harpreet Singh, PhD</p><p style="font-size:10pt;color:rgba(255,255,255,0.7);margin-top:0.2cm;">CEO, Immatics N.V.</p></div><div class="cover-accent-bar"></div><div class="cover-meta"><strong>May 2026</strong> | CONFIDENTIAL</div></div>
+<div class="disclaimer-page"><h2>Disclaimer &amp; Methodology</h2><p><strong>Data Sources:</strong> All data points sourced from public registries accessed 27 May 2026: ClinicalTrials.gov, EMA Human Medicines Register, PubMed.</p><p><strong>Intended Use:</strong> Internal strategic use by Immatics management.</p><p style="margin-top:24pt;font-size:8pt;color:#999;">Report generated: 27 May 2026 | Prepared by: Biotech-Intelligence</p></div>
+
+<div class="content-page"><h1>1. Executive Summary</h1><p>Immatics N.V. (NASDAQ: IMTX) is a German/US clinical-stage biopharmaceutical company developing TCR-based immunotherapies for solid tumors. With two complementary platforms — ACTengine (TCR-T cell therapy) and TCER (T-cell engaging receptor bispecifics) — Immatics addresses the fundamental challenge of targeting intracellular tumor antigens.</p>
+
+<h2>1.1 Key Findings</h2>
+<div class="exec-summary-item"><strong>1. Ph3 Data Pending — A Defining Moment for TCR-T:</strong> The SUPRAME trial (NCT06743126) randomizing IMA203 vs investigator's choice in melanoma is Immatics' first Phase 3. A positive readout would validate TCR-T as a modality in solid tumors.</div>
+<div class="exec-summary-item"><strong>2. PRAME is a High-Value Target:</strong> PRAME is expressed across melanoma, sarcoma, NSCLC, ovarian, head-neck cancer with minimal normal tissue expression. Nature Medicine 2025 (PMID 40205198) published interim Ph1 data.</div>
+<div class="exec-summary-item"><strong>3. Dual Modality Strategy De-Risks:</strong> ACTengine (TCR-T) and TCER (off-the-shelf bispecific) address different market segments. TCER could provide a scalable alternative if TCR-T manufacturing proves challenging.</div>
+<div class="exec-summary-item"><strong>4. 5 Active Trials — Focused Pipeline:</strong> IMA203 (Ph3), IMA203CD8, IMA203 + mRNA-4203 combo, IMA401, IMA402 — all targeting PRAME or MAG family antigens.</div>
+<div class="exec-summary-item"><strong>5. Financial Position:</strong> ~$200-300M market cap (NASDAQ). Key inflection point is SUPRAME enrollment completion and interim analysis.</div>
+<p class="source">Source: ClinicalTrials.gov (NCT06743126, NCT03686124), Nature Medicine 2025 (PMID 40205198)</p></div>
+
+<div class="content-page"><h1>2. Company &amp; Pipeline</h1>
+<h2>2.1 Corporate Profile</h2>
+<table><tr><th>Parameter</th><th>Value</th></tr>
+<tr><td>Company</td><td>Immatics N.V.</td></tr>
+<tr><td>Ticker</td><td>IMTX (NASDAQ)</td></tr>
+<tr><td>HQ</td><td>Tübingen, Germany / Houston, USA</td></tr>
+<tr><td>CEO</td><td>Harpreet Singh, PhD</td></tr>
+<tr><td>Market Cap</td><td>~$200-300M</td></tr>
+<tr><td>Platforms</td><td>ACTengine (TCR-T) + TCER (bispecific)</td></tr>
+<tr><td>Primary Target</td><td>PRAME (IMA203, IMA402)</td></tr></table>
+
+<h2>2.2 Pipeline</h2>
+<table><tr><th>Asset</th><th>Platform</th><th>Target</th><th>Phase</th><th>Status</th></tr>
+<tr><td>IMA203</td><td>ACTengine TCR-T</td><td>PRAME</td><td>Ph3 (melanoma) + Ph1/2</td><td>RECRUITING</td></tr>
+<tr><td>IMA203CD8</td><td>ACTengine TCR-T</td><td>PRAME</td><td>Ph1/2</td><td>RECRUITING</td></tr>
+<tr><td>IMA203 + mRNA-4203</td><td>ACTengine + mRNA</td><td>PRAME</td><td>Ph1</td><td>RECRUITING</td></tr>
+<tr><td>IMA401</td><td>TCER bispecific</td><td>MAG family</td><td>Ph1</td><td>ACTIVE_NOT_RECRUITING</td></tr>
+<tr><td>IMA402</td><td>TCER bispecific</td><td>PRAME</td><td>Ph1/2</td><td>RECRUITING</td></tr></table>
+<p class="source">Source: ClinicalTrials.gov, accessed 2026-05-27</p>
+
+<h2>2.3 TCR-T vs CAR-T</h2>
+<table><tr><th>Parameter</th><th>CAR-T</th><th>TCR-T (Immatics)</th></tr>
+<tr><td>Antigen Recognition</td><td>Surface only</td><td>Intracellular + surface (via HLA)</td></tr>
+<tr><td>Solid Tumor Efficacy</td><td>Limited</td><td>Promising (Nature Med 2025)</td></tr>
+<tr><td>Proteome Access</td><td>~20%</td><td>~80%</td></tr>
+<tr><td>CRS/ICANS Risk</td><td>High</td><td>Lower</td></tr></table></div>
+
+<div class="content-page"><h1>3. Competitive Landscape</h1>
+<h2>3.1 TCR Therapy Competitors</h2>
+<table><tr><th>Company</th><th>Program</th><th>Target</th><th>Phase</th></tr>
+<tr><td><strong>Immatics</strong></td><td><strong>IMA203</strong></td><td><strong>PRAME</strong></td><td><strong>Ph3</strong></td></tr>
+<tr><td>Adaptimmune</td><td>Afami-cel</td><td>MAGE-A4</td><td>Approved (US 2024)</td></tr>
+<tr><td>Immunocore</td><td>Kimmtrak</td><td>gp100 (ImmTAC)</td><td>Approved (US/EU 2022)</td></tr>
+<tr><td>TScan Therapeutics</td><td>TSC-100/101</td><td>HA-1/HA-2</td><td>Ph1</td></tr></table>
+<div class="navy-box"><strong>Context:</strong> Adaptimmune's afami-cel (Tecelra) is the first FDA-approved TCR-T (2024), but commercial uptake has been limited. Immatics' SUPRAME targets a larger market (melanoma) with a broader target (PRAME).</div>
+
+<h2>3.2 PRAME Target Advantage</h2>
+<p>PRAME expression: Melanoma ~90%, synovial sarcoma ~80%, NSCLC ~50%, ovarian ~40%. Minimal normal tissue expression — favorable therapeutic index.</p></div>
+
+<div class="content-page"><h1>4. Catalysts &amp; Strategy</h1>
+<h2>4.1 Key Catalysts</h2>
+<table><tr><th>Event</th><th>Timeline</th><th>Impact</th></tr>
+<tr><td>SUPRAME Ph3 enrollment completion</td><td>2026-2027</td><td>First TCR-T Ph3 in solid tumors</td></tr>
+<tr><td>IMA203 Ph1/2 updated data</td><td>2026</td><td>Efficacy readout beyond melanoma</td></tr>
+<tr><td>IMA402 Ph1 dose data</td><td>2026-2027</td><td>First off-the-shelf PRAME bispecific data</td></tr>
+<tr><td>IMA203 + mRNA-4203 combo data</td><td>2027</td><td>TCR-T + mRNA vaccine combination</td></tr></table>
+
+<h2>4.2 Strategic Recommendations</h2>
+<div class="key-finding"><strong>1. SUPRAME is Everything.</strong> First Ph3 TCR-T trial in solid tumors. Focus all resources on enrollment and data quality.</div>
+<div class="key-finding"><strong>2. Nature Medicine Publication is a Key Asset.</strong> Peer-reviewed validation of IMA203. Use for KOL engagement and investor positioning.</div>
+<div class="key-finding"><strong>3. TCER Provides Upside.</strong> IMA402 success transforms Immatics from cell therapy company to platform company.</div>
+<div class="key-finding"><strong>4. mRNA-4203 Combo is High-Risk, High-Reward.</strong> Novel approach to enhance T-cell persistence.</div></div>
+
+<div class="content-page"><h1>5. Key Takeaways for Harpreet Singh</h1>
+<div class="key-finding"><strong>1. Most Advanced TCR-T Company Globally.</strong> Ph3 melanoma trial + Nature Medicine publication + dual-platform strategy. The next 12-18 months are defining.</div>
+<div class="key-finding"><strong>2. PRAME is a Superior Target.</strong> High tumor expression, low normal tissue expression. Immatics' IP around PRAME-directed TCRs is a significant asset.</div>
+<div class="key-finding"><strong>3. Manufacturing Remains a Challenge.</strong> TCER platform (IMA402) offers off-the-shelf alternative — could be transformative if successful.</div>
+<div class="key-finding"><strong>4. Competitive Field Consolidating.</strong> Adaptimmune/TCRT merger, Immunocore's success create both pressure and partnering opportunities.</div>
+<div class="key-finding"><strong>5. Cash Runway to Catalysts is Critical.</strong> Prioritize SUPRAME + IMA402 if resources become constrained.</div></div>
+
+</body>
+</html>

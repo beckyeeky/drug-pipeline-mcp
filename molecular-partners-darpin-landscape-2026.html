@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><style>
+@page { size: A4; margin: 2.5cm; @top-center { content: "CONFIDENTIAL"; font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #7c3aed; letter-spacing: 3px; } @bottom-center { content: "Page " counter(page); font-family: "Liberation Sans", Arial, sans-serif; font-size: 8pt; color: #666; } }
+@page:first { @top-center { content: ""; } @bottom-center { content: ""; } margin: 0; }
+body { font-family: "Liberation Sans", Arial, Helvetica, sans-serif; font-size: 10pt; line-height: 1.55; color: #222; margin: 0; padding: 0; }
+.cover-page { width: 21cm; height: 29.7cm; background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; page-break-after: always; position: relative; overflow: hidden; }
+.cover-page::before { content: ""; position: absolute; top: -50%; right: -30%; width: 60%; height: 100%; background: radial-gradient(ellipse, rgba(124,58,237,0.12) 0%, transparent 70%); }
+.cover-accent-bar { position: absolute; bottom: 4cm; left: 3cm; right: 3cm; height: 3px; background: #a78bfa; }
+.cover-page .cover-label { font-size: 9pt; letter-spacing: 4px; text-transform: uppercase; color: #a78bfa; margin-bottom: 1.5cm; }
+.cover-page h1 { font-size: 22pt; font-weight: 700; margin: 0 2cm 0.8cm 2cm; line-height: 1.25; }
+.cover-page .cover-subtitle { font-size: 13pt; color: rgba(255,255,255,0.85); margin-bottom: 2cm; max-width: 14cm; }
+.cover-page .cover-meta { font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 1cm; }
+.cover-page .cover-meta strong { color: #a78bfa; }
+.disclaimer-page { page-break-after: always; padding-top: 3cm; }
+.disclaimer-page h2 { color: #7c3aed; font-size: 14pt; border-bottom: 2px solid #a78bfa; padding-bottom: 6pt; }
+.disclaimer-page p { font-size: 9pt; color: #555; line-height: 1.6; }
+h1 { color: #7c3aed; font-size: 18pt; margin-top: 0; margin-bottom: 12pt; padding-bottom: 6pt; border-bottom: 3px solid #a78bfa; }
+h2 { color: #7c3aed; font-size: 13pt; margin-top: 20pt; margin-bottom: 8pt; padding-bottom: 3pt; border-bottom: 1px solid #ddd; }
+h3 { color: #333; font-size: 11pt; margin-top: 14pt; margin-bottom: 6pt; }
+.content-page { page-break-before: always; padding: 0; }
+p.source { font-size: 7.5pt; color: #888; margin-top: 2pt; margin-bottom: 6pt; font-style: italic; }
+.key-finding { background: #f5f5f5; border-left: 4px solid #7c3aed; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.key-finding strong { color: #7c3aed; }
+.amber-box { background: #fff8e1; border-left: 4px solid #ff6f00; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+.navy-box { background: #f3e8ff; border-left: 4px solid #7c3aed; padding: 10pt 12pt; margin: 10pt 0; font-size: 9.5pt; }
+table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 8.5pt; }
+table th { background: #7c3aed; color: white; padding: 6pt 8pt; text-align: left; font-weight: 600; }
+table td { padding: 5pt 8pt; border-bottom: 1px solid #e0e0e0; }
+table tr:nth-child(even) td { background: #f8f8f8; }
+.exec-summary-item { margin-bottom: 10pt; padding-left: 10pt; border-left: 3px solid #7c3aed; }
+.exec-summary-item strong { color: #7c3aed; }
+ul, ol { font-size: 9.5pt; line-height: 1.5; }
+li { margin-bottom: 3pt; }
+</style></head><body>
+
+<div class="cover-page">
+  <div class="cover-label">Competitive Intelligence Report</div>
+  <h1>DARPin &amp; Novel Scaffold Therapeutics</h1>
+  <div class="cover-subtitle">Strategic Positioning Analysis for Molecular Partners AG</div>
+  <div style="margin-top: 1cm;">
+    <p style="font-size: 11pt; color: rgba(255,255,255,0.9); margin-bottom: 0.3cm;">Prepared Exclusively for</p>
+    <p style="font-size: 14pt; font-weight: 700; margin: 0;">Patrick Amstutz, PhD</p>
+    <p style="font-size: 10pt; color: rgba(255,255,255,0.7); margin-top: 0.2cm;">CEO, Molecular Partners AG</p>
+  </div>
+  <div class="cover-accent-bar"></div>
+  <div class="cover-meta"><strong>May 2026</strong> &nbsp;|&nbsp; CONFIDENTIAL</div>
+</div>
+
+<div class="disclaimer-page">
+  <h2>Disclaimer &amp; Methodology</h2>
+  <p><strong>Data Sources:</strong> All data points sourced from public registries accessed 27 May 2026: ClinicalTrials.gov, EMA Human Medicines Register, PubMed.</p>
+  <p><strong>Intended Use:</strong> Internal strategic use by Molecular Partners AG management.</p>
+  <p style="margin-top: 24pt; font-size: 8pt; color: #999;">Report generated: 27 May 2026 | Prepared by: Biotech-Intelligence</p>
+</div>
+
+<div class="content-page">
+<h1>1. Executive Summary</h1>
+<p>Molecular Partners AG (SIX: MOLN) is a Swiss clinical-stage biopharmaceutical company developing DARPin® (Designed Ankyrin Repeat Protein) therapeutics — a novel class of biologic drugs that combine the specificity of antibodies with the stability and manufacturability of small proteins. This report analyzes the DARPin and novel scaffold landscape and Molecular Partners' position within it.</p>
+
+<h2>1.1 Key Findings</h2>
+
+<div class="exec-summary-item"><strong>1. Two Novel Mechanisms in Ph1/2:</strong> MP0533 (tri-specific DARPin CD3-engager targeting CD33, CD123, CD70 in AML) and MP0712 (²¹²Pb radiopharmaceutical DARPin targeting DLL3 in SCLC/NETs) represent two distinct, first-in-class approaches. Both are RECRUITING.</div>
+
+<div class="exec-summary-item"><strong>2. MP0533 is a Potential Paradigm Shift in AML:</strong> The tri-specific design targeting three AML antigens (CD33, CD123, CD70) simultaneously is a novel approach to overcome antigen escape — a major limitation of existing CD33 and CD123 bispecifics. Preclinical data (Cancer Immunol Res 2024, PMID 38683145) demonstrated selective killing of AML leukemic stem cells.</div>
+
+<div class="exec-summary-item"><strong>3. MP0712 Enters the Radiopharmaceutical Race:</strong> The ²¹²Pb-labeled DARPin targeting DLL3 positions Molecular Partners in the rapidly growing radiopharmaceutical space. Partnering with Orano Med provides radiochemistry expertise. DLL3 is a validated target in SCLC (tarlatamab, Amgen, Ph3).</div>
+
+<div class="exec-summary-item"><strong>4. DARPin Platform — Proven but Underleveraged:</strong> The DARPin platform has generated clinical data across oncology (MP0250, MP0274) and COVID-19 (ensovibep), but no drug has reached approval. The shift toward wholly owned assets (MP0533, MP0712) represents a strategic pivot from the previous partnered model.</div>
+
+<div class="exec-summary-item"><strong>5. Financial Position — Public Company with Focused Pipeline:</strong> As a publicly traded company (SIX: MOLN), Molecular Partners has transparency on cash runway. With ~CHF 100-150M market cap and 3 active trials, strategic capital allocation is critical — particularly with MP0317 (biliary tract) and MP0533 (AML) both requiring Phase 2 funding.</div>
+
+<p class="source">Source: ClinicalTrials.gov (NCT05673057, NCT07278479, NCT07036380); PubMed (PMID 38683145, 42048463); SIX Swiss Exchange filings</p>
+</div>
+
+<div class="content-page">
+<h1>2. Company &amp; Pipeline Overview</h1>
+
+<h2>2.1 Corporate Profile</h2>
+<table>
+  <tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
+  <tr><td>Company Name</td><td>Molecular Partners AG</td><td>Corporate</td></tr>
+  <tr><td>Ticker</td><td>MOLN (SIX Swiss Exchange)</td><td>SIX</td></tr>
+  <tr><td>Headquarters</td><td>Schlieren/Zürich, Switzerland</td><td>Corporate</td></tr>
+  <tr><td>CEO</td><td>Patrick Amstutz, PhD (co-founder)</td><td>Corporate</td></tr>
+  <tr><td>Market Cap</td><td>~CHF 100-150M</td><td>SIX</td></tr>
+  <tr><td>Platform</td><td>DARPin® — Designed Ankyrin Repeat Proteins</td><td>Corporate / PubMed</td></tr>
+  <tr><td>Lead Assets</td><td>MP0533 (AML), MP0712 (SCLC/NETs), MP0317 (BTC)</td><td>ClinicalTrials.gov</td></tr>
+  <tr><td>Stage</td><td>Three wholly owned assets in Ph1/2</td><td>ClinicalTrials.gov</td></tr>
+</table>
+
+<h2>2.2 Clinical Pipeline</h2>
+<table>
+  <tr><th>Asset</th><th>Target</th><th>Modality</th><th>Indication</th><th>Phase</th><th>Status</th><th>Enrollment</th></tr>
+  <tr><td>MP0533</td><td>CD33 × CD123 × CD70</td><td>Tri-specific DARPin CD3-engager</td><td>AML/MDS</td><td>Ph1/2</td><td>RECRUITING</td><td>249</td></tr>
+  <tr><td>MP0712</td><td>DLL3</td><td>²¹²Pb-DARPin radiopharmaceutical</td><td>SCLC, LCNEC, epNEC</td><td>Ph1/2</td><td>RECRUITING</td><td>138</td></tr>
+  <tr><td>MP0317</td><td>FAP × CD40</td><td>Tri-specific DARPin, tumor-localized CD40 agonist</td><td>Biliary tract cancer</td><td>Ph1/2</td><td>RECRUITING</td><td>—</td></tr>
+</table>
+<p class="source">Source: ClinicalTrials.gov (NCT05673057, NCT07278479, NCT07036380), accessed 2026-05-27</p>
+
+<h2>2.3 The DARPin Advantage</h2>
+<table>
+  <tr><th>Parameter</th><th>DARPin</th><th>Conventional mAb</th><th>Bispecific mAb</th></tr>
+  <tr><td>Size</td><td>~14-18 kDa (single domain)</td><td>~150 kDa</td><td>~150-200 kDa</td></tr>
+  <tr><td>Tumor Penetration</td><td>High (deeper tissue diffusion)</td><td>Moderate</td><td>Moderate</td></tr>
+  <tr><td>Multispecificity</td><td>Built-in (single molecule)</td><td>No</td><td>Yes (engineered)</td></tr>
+  <tr><td>Stability</td><td>Very high (Tm >70°C)</td><td>High</td><td>High</td></tr>
+  <tr><td>Manufacturing</td><td>E. coli expression (low COGS)</td><td>CHO cells (high COGS)</td><td>CHO cells (high COGS)</td></tr>
+  <tr><td>Immunogenicity</td><td>Low (fully human design)</td><td>Variable</td><td>Variable</td></tr>
+  <tr><td>Flexibility</td><td>Modular — swap domains for new targets</td><td>Requires new antibody</td><td>Requires new engineering</td></tr>
+</table>
+<p class="source">Source: Molecular Partners corporate materials; PubMed (DARPin platform publications)</p>
+</div>
+
+<div class="content-page">
+<h1>3. Therapeutic Landscape &amp; Competition</h1>
+
+<h2>3.1 AML — The MP0533 Opportunity</h2>
+<p>Acute myeloid leukemia (AML) remains a high-unmet-need indication with limited treatment options beyond chemotherapy and targeted agents for select mutations. Key competitive dynamics:</p>
+<ul>
+  <li><strong>CD33-targeted:</strong> Gemtuzumab ozogamicin (Mylotarg, Pfizer) — the only approved CD33 ADC; limited by toxicity</li>
+  <li><strong>CD123-targeted:</strong> Tagraxofusp (Elzonris) — approved for BPDCN, being explored in AML</li>
+  <li><strong>Bispecific T-cell engagers:</strong> Multiple CD33xCD3 and CD123xCD3 programs in Ph1/2 (Amgen, MacroGenics, etc.)</li>
+  <li><strong>MP0533 differentiation:</strong> First tri-specific approach targeting three antigens simultaneously — reduces antigen escape risk, which is the primary failure mode for single-target bispecifics in AML</li>
+</ul>
+
+<h2>3.2 DLL3-Targeting — The MP0712 Opportunity</h2>
+<p>DLL3 (delta-like ligand 3) is an emerging target in SCLC and neuroendocrine tumors:</p>
+<ul>
+  <li><strong>Tarlatamab (Amgen, Imdelltra):</strong> DLL3xCD3 bispecific T-cell engager — approved in US (2024) for 2L+ SCLC. Establishes DLL3 as a clinically validated target</li>
+  <li><strong>MP0712 differentiation:</strong> ²¹²Pb alpha-emitting radiopharmaceutical — different mechanism (radiation, not T-cell) — avoids CRS/ICANS toxicity of T-cell engagers</li>
+  <li><strong>Orano Med partnership:</strong> Provides access to ²¹²Pb supply chain and radiopharmaceutical expertise</li>
+</ul>
+
+<h2>3.3 Novel Scaffold Competition</h2>
+<table>
+  <tr><th>Platform</th><th>Company</th><th>Scaffold Type</th><th>Stage</th></tr>
+  <tr><td><strong>DARPin®</strong></td><td><strong>Molecular Partners</strong></td><td><strong>Ankyrin repeat protein</strong></td><td><strong>Ph1-2 (oncology)</strong></td></tr>
+  <tr><td>Affimer</td><td>Avacta Group</td><td>Cystatin scaffold</td><td>Preclinical-Ph1</td></tr>
+  <tr><td>Adnectin</td><td>BMS (formerly Adnexus)</td><td>Fibronectin type III domain</td><td>Discontinued</td></tr>
+  <tr><td>Anticalin</td><td>Pieris Pharmaceuticals</td><td>Lipocalin scaffold</td><td>Ph1-2 (oncology)</td></tr>
+  <tr><td>Kunitz domain</td><td>Various</td><td>Protease inhibitor domain</td><td>Ph2-3 (non-oncology)</td></tr>
+  <tr><td>Centyrin</td><td>Janssen</td><td>Consensus tenascin scaffold</td><td>Ph1</td></tr>
+</table>
+<p class="source">Source: Company filings; ClinicalTrials.gov; industry literature, accessed 2026-05-27</p>
+</div>
+
+<div class="content-page">
+<h1>4. Key Catalysts &amp; Strategic Positioning</h1>
+
+<h2>4.1 Near-Term Catalysts</h2>
+<table>
+  <tr><th>Event</th><th>Timeline</th><th>Impact</th></tr>
+  <tr><td>MP0533 Ph1 dose-escalation data update</td><td>2026-2027</td><td>First clinical data for tri-specific DARPin T-cell engager in AML</td></tr>
+  <tr><td>MP0712 Ph1 initial safety data</td><td>2026-2027</td><td>First-in-human data for ²¹²Pb-DARPin radiopharmaceutical</td></tr>
+  <tr><td>MP0317 Ph2 biliary tract cancer data</td><td>2027</td><td>FAP-targeted CD40 agonist — novel IO mechanism</td></tr>
+  <tr><td>MP0533 Ph2 dose optimization</td><td>2028</td><td>ORR data in AML (n=249 trial)</td></tr>
+</table>
+
+<h2>4.2 Strategic Recommendations</h2>
+
+<div class="key-finding"><strong>1. MP0533 is the Portfolio Anchor.</strong> The tri-specific, multi-antigen approach in AML addresses a clear unmet need (antigen escape). Strong preclinical data (Cancer Immunol Res 2024) de-risks the mechanism. Resources should prioritize generating clinical proof-of-concept.</div>
+
+<div class="key-finding"><strong>2. MP0712 Taps into the Radiopharmaceutical Boom.</strong> The radiopharmaceutical space is attracting significant pharma interest (Novartis/AAA, Eli Lilly/POINT Biopharma, BMS/RayzeBio). DLL3 is validated (tarlatamab), and alpha-emitters are the next frontier. The Orano Med partnership is strategically sound.</div>
+
+<div class="key-finding"><strong>3. Platform Story Needs a Win.</strong> Despite strong science, no DARPin has reached approval. The current wholly owned pipeline is Molecular Partners' best chance to demonstrate that DARPin is a viable drug modality, not just a research tool.</div>
+
+<div class="key-finding"><strong>4. Cash Management is Critical.</strong> With ~CHF 100-150M market cap and 3 active Ph1/2 trials, financing the pipeline to meaningful data readouts requires disciplined capital allocation. BD partnerships for non-core assets (MP0317?) could extend runway.</div>
+
+<div class="key-finding"><strong>5. DARPin Versatility is an Undervalued Asset.</strong> The platform's modularity (swap domains = new program) is not reflected in the current market cap. A positive clinical readout for any single asset would likely re-rate the entire platform.</div>
+
+</div>
+
+<div class="content-page">
+<h1>5. Key Takeaways for Patrick Amstutz</h1>
+
+<div class="key-finding"><strong>1. MP0533 is Molecular Partners' Most Important Program.</strong> The tri-specific design is genuinely differentiated from the dozens of CD3-engagers in development. Clinical proof that a tri-specific DARPin T-cell engager works in AML would validate both the asset and the platform.</div>
+
+<div class="key-finding"><strong>2. Radiopharmaceutical Opportunity has a Narrow Window.</strong> Pharma interest in radiopharmaceuticals is at an all-time high. Early data from MP0712 that demonstrates tumor targeting and acceptable dosimetry in SCLC/neuroendocrine patients would position Molecular Partners for a high-value partnership.</div>
+
+<div class="key-finding"><strong>3. Pipeline Breadth is a Double-Edged Sword.</strong> Three wholly owned assets across three different modalities (T-cell engager, radiopharmaceutical, tumor-localized IO) provides optionality but dilutes resources. Prioritization of one or two programs to definitive clinical data may be necessary.</div>
+
+<div class="key-finding"><strong>4. The DARPin Platform Deserves a BD Partnering Strategy.</strong> Other novel scaffolds (Anticalin/Pieris, Affimer/Avacta) have successfully partnered with pharma. Molecular Partners should leverage the platform's advantages (multispecificity, stability, manufacturing) in proactive BD discussions — particularly for targets where DARPin's small size and tissue penetration provide clear advantages over antibodies.</div>
+
+</div>
+
+</body>
+</html>

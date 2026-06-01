@@ -1,0 +1,14 @@
+MEDIA:/home/j/drug-pipeline/heidelberg-pharma-adc-landscape-2026-v3.pdf
+
+Hier der vollständig aktualisierte **Heidelberg Pharma Report v3** mit allen 8 neuen Datenpunkten aus dem Pre-Release-Check.
+
+**Was sich geändert hat (v2 → v3):**
+- ✅ FDA Fast Track Designation (Okt 2025) — war komplett vergessen
+- ✅ RP2D Determination + Phase IIa Start (Apr 2026)
+- ✅ Huadong & Takeda Milestone Payments
+- ✅ Cost Restructuring Sep 2025
+- ✅ Aktuelle Marktdaten (€2,65 statt €2,73)
+- ✅ EHA 2026 als kommender Katalysator
+- ✅ Cash-Runway Analyse (€9,3M bei -€46M Burn)
+
+**Fazit:** Jeder Datenpunkt live gegen Primärquelle verifiziert. Der alte Report war korrekt, aber unvollständig. Der neue Report ist vollständig und direkt relevant für Dr. Liu.

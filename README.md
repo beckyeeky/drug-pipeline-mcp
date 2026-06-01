@@ -44,7 +44,7 @@ Or deploy via [Smithery](https://smithery.ai/servers/crop-mcp/drug-pipeline) —
 | `get_approvals` | FDA approval history with submission dates and status | openFDA Drugs@FDA |
 | `get_eu_approvals` | EU/EMA authorization — brand names, ATC, status, orphan/biosimilar flags | EMA Daily XLSX |
 | `get_safety_data` | FAERS adverse event reports — top reactions, serious outcomes, total count | openFDA FAERS |
-| `detect_safety_signals` | PRR safety signal detection — disproportionate AE analysis | openFDA FAERS |
+| `detect_safety_signals` | Disproportionality screening (exploratory) — AE reporting ratios | openFDA FAERS |
 | `get_drug_label` | FDA prescribing info — indications, boxed warnings, contraindications, dosing | openFDA Drug Labeling |
 | `get_dailymed_label` | NIH drug label (OTC + Rx) — SPL set ID, version, DailyMed URL | DailyMed (NIH/NLM) |
 | `get_recalls` | FDA drug recalls — Class I/II/III, reasons, dates, firms | openFDA Enforcement |
@@ -64,6 +64,9 @@ Or deploy via [Smithery](https://smithery.ai/servers/crop-mcp/drug-pipeline) —
 | `compare_drugs` | Head-to-head — FDA, EU, MOA, safety, patent across 2 drugs | Composite |
 | `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + interactions + trials + pubs + patent | All sources |
 | `pipeline_landscape` | **Full pipeline for a condition** — approved + Phase 3/2/1 + mechanisms + sponsors + pubs | Composite |
+
+
+> ⚠️ **`detect_safety_signals`**: Exploratory disproportionality screening — uses an approximate denominator, not a validated PRR. Not for regulatory or clinical use. See methodology note in code.
 
 ---
 

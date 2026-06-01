@@ -35,6 +35,7 @@ Tools:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import sys
 import time
@@ -973,7 +974,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
             )
         ]
     try:
-        return meta["handler"](**(arguments or {}))
+        return await asyncio.to_thread(meta["handler"], **(arguments or {}))
     except KeyError as e:
         return [
             types.TextContent(
