@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.DasClown/drug-pipeline-mcp",
+  "name": "io.github.beckyeeky/drug-pipeline-mcp",
   "description": "Pharmaceutical R&D Pipeline Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug interactions, drug labels, recalls, patents & publications. 28 tools, all free data sources.",
   "repository": {
-    "url": "https://github.com/DasClown/drug-pipeline-mcp",
+    "url": "https://github.com/beckyeeky/drug-pipeline-mcp",
     "source": "github"
   },
   "version": "0.7.1",

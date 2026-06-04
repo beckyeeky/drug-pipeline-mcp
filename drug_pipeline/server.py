@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 import time
 from typing import Any
@@ -132,8 +133,11 @@ from .sources import (
 from .sources import (
     search_trials as _search_trials,
 )
+from .sources import reset_request_deadline, set_request_deadline
 
 _start_time = time.time()
+_PRETTY_JSON = os.getenv("DRUG_PIPELINE_PRETTY_JSON", "").lower() in {"1", "true", "yes", "on"}
+_TOOL_TIMEOUT_SECONDS = float(os.getenv("DRUG_PIPELINE_TOOL_TIMEOUT", "20"))
 
 # ─────────────────────────────────────────────────────────────
 # Pydantic Input Models
@@ -589,7 +593,17 @@ def _handle_find_investigators(**kwargs: Any) -> list[types.TextContent]:
 
 def _response(data: dict) -> list[types.TextContent]:
     """Wrap a result dict in MCP TextContent."""
-    return [types.TextContent(type="text", text=json.dumps(data, indent=2))]
+    return [types.TextContent(type="text", text=_dump_json(data))]
+
+
+def _dump_json(data: Any) -> str:
+    """Serialize JSON compactly by default to reduce stdio payload size."""
+    kwargs: dict[str, Any] = {"ensure_ascii": False}
+    if _PRETTY_JSON:
+        kwargs["indent"] = 2
+    else:
+        kwargs["separators"] = (",", ":")
+    return json.dumps(data, **kwargs)
 
 
 TOOLS = {
@@ -964,7 +978,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps(
+                text=_dump_json(
                     {
                         "status": "error",
                         "error_code": "UNKNOWN_TOOL",
@@ -973,13 +987,14 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
                 ),
             )
         ]
+    deadline_token = set_request_deadline(_TOOL_TIMEOUT_SECONDS)
     try:
         return await asyncio.to_thread(meta["handler"], **(arguments or {}))
     except KeyError as e:
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps(
+                text=_dump_json(
                     {
                         "status": "error",
                         "error_code": "VALIDATION_ERROR",
@@ -992,7 +1007,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps(
+                text=_dump_json(
                     {
                         "status": "error",
                         "error_code": "VALIDATION_ERROR",
@@ -1008,7 +1023,7 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
         return [
             types.TextContent(
                 type="text",
-                text=json.dumps(
+                text=_dump_json(
                     {
                         "status": "error",
                         "error_code": "TOOL_ERROR",
@@ -1020,6 +1035,8 @@ async def handle_call_tool(name: str, arguments: dict[str, Any] | None) -> list[
                 ),
             )
         ]
+    finally:
+        reset_request_deadline(deadline_token)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1075,7 +1092,7 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
                 "version": __version__,
                 "description": "Pharmaceutical R&D Intelligence MCP Server — Clinical trials, FDA/EMA approvals, safety data, drug labels, recalls, patents, pricing, site intelligence, and company pipelines. 28 tools, 8 data sources.",
                 "tools": list(TOOLS.keys()),
-                "docs": "https://github.com/DasClown/drug-pipeline-mcp",
+                "docs": "https://github.com/beckyeeky/drug-pipeline-mcp",
                 "endpoints": {
                     "sse": "/sse",
                     "server_card": "/.well-known/mcp/server-card.json",
@@ -1098,11 +1115,11 @@ async def run_http(host: str = "0.0.0.0", port: int = 8080):
             {
                 "serverInfo": {"name": "drug-pipeline", "version": __version__},
                 "description": "Pharmaceutical R&D Intelligence MCP Server. Kombiniert ClinicalTrials.gov, openFDA, EMA, RxNorm, PubMed, und FAERS zu einer umfassenden Pharma-Intelligenz für KI-Agenten.",
-                "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
+                "homepage": "https://github.com/beckyeeky/drug-pipeline-mcp",
                 "license": "MIT",
                 "author": {
                     "name": "DrugPipelineMCP",
-                    "url": "https://github.com/DasClown",
+                    "url": "https://github.com/beckyeeky",
                 },
                 "iconUrl": "https://raw.githubusercontent.com/DasClown/CropProphEU/main/static/icon.svg",
                 "capabilities": {

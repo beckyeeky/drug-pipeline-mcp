@@ -43,7 +43,7 @@ Neben Issues haben wir **GitHub Discussions**! Hier kannst du:
 - **Ideen diskutieren** — bevor du einen Feature Request schreibst
 - **Show & Tell** — zeig, was du mit dem Tool gebaut hast
 
-👉 https://github.com/DasClown/drug-pipeline-mcp/discussions
+👉 https://github.com/beckyeeky/drug-pipeline-mcp/discussions
 
 ## Issues
 
@@ -139,7 +139,7 @@ Jeder PR muss einen Eintrag in `CHANGELOG.md` haben:
 
 ```bash
 # Clone
-git clone https://github.com/DasClown/drug-pipeline-mcp.git
+git clone https://github.com/beckyeeky/drug-pipeline-mcp.git
 cd drug-pipeline-mcp
 
 # Venv (optional)

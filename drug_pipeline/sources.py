@@ -6,10 +6,13 @@ No hallucination — every result traces to a source API.
 """
 
 import json
+import os
 import re as _re
+import socket
 import time
 import urllib.parse
 import urllib.request
+from contextvars import ContextVar, Token
 from datetime import datetime
 from typing import Any
 
@@ -24,12 +27,18 @@ _PUBMED_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
 _RATE_LIMIT_DELAY = 0.35  # ~3 requests/sec for openFDA
 _last_call = 0.0
+_DEFAULT_REQUEST_TIMEOUT = float(os.getenv("DRUG_PIPELINE_REQUEST_TIMEOUT", "8"))
+_DEFAULT_EMA_DOWNLOAD_TIMEOUT = float(os.getenv("DRUG_PIPELINE_EMA_DOWNLOAD_TIMEOUT", "12"))
+_MIN_NETWORK_TIMEOUT = 1.0
+_REQUEST_DEADLINE: ContextVar[float | None] = ContextVar(
+    "drug_pipeline_request_deadline", default=None
+)
 
 # ─────────────────────────────────────────────────────────────
 # EMA Medicines Data — Daily XLSX Download
 # ─────────────────────────────────────────────────────────────
 
-_EMA_XLSX_PATH = "/tmp/ema_medicines.xlsx"
+_EMA_XLSX_PATH = os.path.join(os.path.dirname(__file__), "ema_medicines.xlsx")
 _EMA_DOWNLOAD_URL = (
     "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
 )
@@ -38,13 +47,48 @@ _ema_cache_time: float = 0.0  # timestamp of last successful load
 _EMA_CACHE_TTL: float = 86400  # 24h in seconds
 
 
+def set_request_deadline(timeout_seconds: float | None) -> Token:
+    """Set a per-tool deadline so nested network calls can respect client budgets."""
+    if timeout_seconds is None or timeout_seconds <= 0:
+        return _REQUEST_DEADLINE.set(None)
+    return _REQUEST_DEADLINE.set(time.monotonic() + timeout_seconds)
+
+
+def reset_request_deadline(token: Token) -> None:
+    """Restore the previous per-tool deadline."""
+    _REQUEST_DEADLINE.reset(token)
+
+
+def _remaining_request_budget() -> float | None:
+    """Return remaining seconds for the active tool call, if any."""
+    deadline = _REQUEST_DEADLINE.get()
+    if deadline is None:
+        return None
+    return deadline - time.monotonic()
+
+
+def _resolve_timeout(timeout: int | float | None = None) -> float:
+    """Clamp per-request timeout to the active tool budget."""
+    requested = float(timeout) if timeout is not None else _DEFAULT_REQUEST_TIMEOUT
+    requested = max(_MIN_NETWORK_TIMEOUT, requested)
+
+    remaining = _remaining_request_budget()
+    if remaining is None:
+        return requested
+    if remaining <= (_MIN_NETWORK_TIMEOUT + 0.1):
+        raise TimeoutError("Tool time budget exhausted before starting the next network request")
+
+    return min(requested, remaining - 0.1)
+
+
 def _download_ema_xlsx() -> bool:
     """Download the latest EMA medicines report. Returns True on success."""
     try:
+        timeout = _resolve_timeout(_DEFAULT_EMA_DOWNLOAD_TIMEOUT)
         req = urllib.request.Request(
             _EMA_DOWNLOAD_URL, headers={"User-Agent": "drug-pipeline-mcp/0.1"}
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = resp.read()
         with open(_EMA_XLSX_PATH, "wb") as f:
             f.write(data)
@@ -139,22 +183,40 @@ def _load_ema_data() -> list[dict]:
         return _ema_cache or []
 
 
-def _rate_limited():
-    """Minimal rate limiting for APIs."""
+def _rate_limited(url: str | None = None):
+    """Apply rate limiting only to APIs that need it."""
+    if not url or not url.startswith(_FDA_BASE):
+        return
+
     global _last_call
     now = time.time()
     elapsed = now - _last_call
     if elapsed < _RATE_LIMIT_DELAY:
-        time.sleep(_RATE_LIMIT_DELAY - elapsed)
+        sleep_for = _RATE_LIMIT_DELAY - elapsed
+        remaining = _remaining_request_budget()
+        if remaining is not None:
+            sleep_for = min(sleep_for, max(0.0, remaining - 0.05))
+        if sleep_for > 0:
+            time.sleep(sleep_for)
     _last_call = time.time()
 
 
 def _fetch(url: str, timeout: int = 15) -> dict | list | str:
     """Fetch a URL and parse JSON, with basic error handling."""
-    _rate_limited()
+    try:
+        resolved_timeout = _resolve_timeout(timeout)
+        _rate_limited(url)
+    except TimeoutError as e:
+        return {
+            "status": "error",
+            "error_code": "TIMEOUT",
+            "message": str(e),
+            "source": url[:80],
+        }
+
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "drug-pipeline-mcp/0.1"})
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urllib.request.urlopen(req, timeout=resolved_timeout) as resp:
             body = resp.read().decode("utf-8")
             ct = resp.headers.get("Content-Type", "")
             if (
@@ -171,7 +233,23 @@ def _fetch(url: str, timeout: int = 15) -> dict | list | str:
             "message": f"HTTP {e.code}: {e.reason}",
             "source": url[:80],
         }
+    except socket.timeout:
+        return {
+            "status": "error",
+            "error_code": "TIMEOUT",
+            "message": f"Request timed out after {resolved_timeout:.1f}s",
+            "source": url[:80],
+        }
     except urllib.error.URLError as e:
+        if isinstance(e.reason, TimeoutError | socket.timeout) or "timed out" in str(
+            e.reason
+        ).lower():
+            return {
+                "status": "error",
+                "error_code": "TIMEOUT",
+                "message": f"Request timed out after {resolved_timeout:.1f}s",
+                "source": url[:80],
+            }
         return {
             "status": "error",
             "error_code": "NETWORK_ERROR",
@@ -736,7 +814,7 @@ def get_eu_approvals(drug_name: str) -> dict:
             "drug_name": drug_name,
             "results": [],
             "total": 0,
-            "message": "EMA data not available. Try again or check /tmp/ema_medicines.xlsx",
+            "message": "EMA data not available. The data file is auto-downloaded on first use to drug_pipeline/ema_medicines.xlsx",
             "data_source": "EMA",
         }
 
@@ -2260,12 +2338,13 @@ def _chembl_search(drug_name: str) -> str | None:
         + '\\", entityNames: [\\"drug\\"]) { hits { id name description } } }"}'
     )
     try:
+        timeout = _resolve_timeout(10)
         req = urllib.request.Request(
             _OT_ENDPOINT,
             data=query.encode(),
             headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"},
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read())
         hits = data.get("data", {}).get("search", {}).get("hits", [])
         for h in hits:
@@ -2309,13 +2388,13 @@ def get_opentargets_drug(drug_name: str) -> dict:
     )
 
     try:
-        _rate_limited()
+        timeout = _resolve_timeout(10)
         req = urllib.request.Request(
             _OT_ENDPOINT,
             data=query.encode(),
             headers={"Content-Type": "application/json", "User-Agent": "drug-pipeline-mcp/0.5"},
         )
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = json.loads(resp.read())
     except Exception as e:
         return {
@@ -3467,6 +3546,9 @@ def find_investigators(
             "condition": condition,
             "drug_name": drug_name,
             "found": False,
+            "total_investigators": 0,
+            "investigators": [],
+            "related_publications": [],
             "message": "No active trials found matching criteria",
             "timestamp": datetime.utcnow().isoformat(),
         }

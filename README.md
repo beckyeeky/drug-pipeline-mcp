@@ -1,26 +1,40 @@
 # 💊 drug-pipeline-mcp
 
-[![CI](https://github.com/DasClown/drug-pipeline-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/DasClown/drug-pipeline-mcp/actions/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/tests-61_✔️-brightgreen)](https://github.com/DasClown/drug-pipeline-mcp/actions/workflows/ci.yml)
-[![Docker](https://ghcr.io/dasclown/drug-pipeline-mcp/badge.svg?style=flat)](https://ghcr.io/dasclown/drug-pipeline-mcp)
-[![Smithery](https://smithery.ai/badge/@crop-mcp/drug-pipeline)](https://smithery.ai/servers/crop-mcp/drug-pipeline)
+[![CI](https://github.com/beckyeeky/drug-pipeline-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/beckyeeky/drug-pipeline-mcp/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-61_✔️-brightgreen)](https://github.com/beckyeeky/drug-pipeline-mcp/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/drug-pipeline-mcp?label=PyPI)](https://pypi.org/project/drug-pipeline-mcp/)
-[![GitHub stars](https://img.shields.io/github/stars/DasClown/drug-pipeline-mcp?style=flat)](https://github.com/DasClown/drug-pipeline-mcp/stargazers)
 
 **Pharmaceutical R&D Pipeline Intelligence for AI Agents** — a lightweight MCP server that aggregates clinical trial data, FDA/EMA approvals, safety surveillance (FAERS), drug labels, patents, drug interactions, recalls, and publications through a unified API. Every output includes a verifiable source identifier (NCT ID, FDA Application Number, or PMID).
 
-Not a replacement for IQVIA/EvaluatePharma. A real-time, publicly accessible intelligence layer that complements subscription databases.
+> 🍴 **This is a fork** of [DasClown/drug-pipeline-mcp](https://github.com/DasClown/drug-pipeline-mcp). Original author: [@DasClown](https://github.com/DasClown).
+
+---
+
+## 🍴 Fork Changes (vs Upstream)
+
+| Change | Detail |
+|--------|--------|
+| **Cross-platform EMA path** | Changed from hardcoded `/tmp/ema_medicines.xlsx` to project-local `drug_pipeline/ema_medicines.xlsx` — works on Windows, Linux, and macOS without manual setup |
+| **Auto-download EMA data** | EMA medicines register auto-downloads on first use (no manual download needed) |
+| **License metadata fix** | PEP 621-compliant `license = {text = "MIT"}` format, removed deprecated classifier |
+| **PyPI / Git URLs** | All repository references updated to this fork |
 
 ---
 
 ## Quick Start
 
-```bash
-pip install git+https://github.com/DasClown/drug-pipeline-mcp.git
+### From Source (Windows / Linux / macOS)
 
-# Start MCP server (stdio)
+```bash
+# 1. Clone
+git clone https://github.com/beckyeeky/drug-pipeline-mcp.git
+cd drug-pipeline-mcp
+
+# 2. Install in editable mode
+pip install -e .
+
+# 3. Start MCP server (stdio)
 drug-pipeline
 
 # Or HTTP mode for remote access
@@ -28,7 +42,31 @@ pip install drug-pipeline-mcp[http]
 drug-pipeline --http --port 8081
 ```
 
-Or deploy via [Smithery](https://smithery.ai/servers/crop-mcp/drug-pipeline) — one click, no config.
+### Windows-Specific Notes
+
+```powershell
+# PowerShell terminal — use these commands:
+git clone https://github.com/beckyeeky/drug-pipeline-mcp.git
+cd drug-pipeline-mcp
+pip install -e .
+
+# EMA data is auto-downloaded to drug_pipeline/ema_medicines.xlsx on first use
+# No /tmp directory needed
+
+# Start server
+drug-pipeline
+```
+
+### Linux / macOS
+
+```bash
+git clone https://github.com/beckyeeky/drug-pipeline-mcp.git
+cd drug-pipeline-mcp
+pip install -e .
+drug-pipeline
+```
+
+**All dependencies**: The EMA XLSX parser (`openpyxl`) is included as a required dependency. No extra steps needed.
 
 ---
 
@@ -65,8 +103,7 @@ Or deploy via [Smithery](https://smithery.ai/servers/crop-mcp/drug-pipeline) —
 | `drug_pipeline` | **Composite** — drug info + FDA + EU + safety + label + signals + recalls + interactions + trials + pubs + patent | All sources |
 | `pipeline_landscape` | **Full pipeline for a condition** — approved + Phase 3/2/1 + mechanisms + sponsors + pubs | Composite |
 
-
-> ⚠️ **`detect_safety_signals`**: Exploratory disproportionality screening — uses an approximate denominator, not a validated PRR. Not for regulatory or clinical use. See methodology note in code.
+> ⚠️ **`detect_safety_signals`**: Exploratory disproportionality screening — uses an approximate denominator, not a validated PRR. Not for regulatory or clinical use.
 
 ---
 
@@ -84,11 +121,11 @@ drug-pipeline-mcp/
 └── README.md
 ```
 
-**Design philosophy:** Lightweight API aggregation. No caching layer. No ML models. No predictions. Each tool makes real-time requests to a public API and returns structured data with source identifiers. The server is intentionally simple — it extracts, structures, and annotates, nothing more.
+**Design philosophy:** Lightweight API aggregation. No caching layer. No ML models. No predictions. Each tool makes real-time requests to a public API and returns structured data with source identifiers.
 
 **Limitations by design:**
 - Rate limits apply per source (openFDA: 10 req/sec, ClinicalTrials.gov: generous)
-- EMA data sourced from a daily-updated XLSX register — format changes monitored manually
+- EMA data sourced from a daily-updated XLSX register — auto-downloaded on first use
 - FAERS data is spontaneous reporting, not incidence rates
 - The server does not interpret, predict, or synthesize beyond what the sources provide
 
@@ -127,59 +164,6 @@ Every data point includes a direct link to its primary source:
 | FDA Product NDC | `https://www.accessdata.fda.gov/scripts/cder/ndc/` |
 | DailyMed SPL Set ID | `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=xxx` |
 
-No calculated fields. No predictions. No estimates. The tool is an aggregator, not an oracle — it brings primary-source data into an AI agent's context so the LLM can apply reasoning, not so the server can produce answers.
-
----
-
-## Testing & Quality
-
-| Check | Status |
-|-------|--------|
-| Unit tests | ✅ 61 passing (pytest) |
-| CI/CD | ✅ Multi-Python matrix (3.10–3.13), Docker build, PyPI publish |
-| Linting | ✅ Ruff (zero warnings) |
-| Formatting | ✅ Black-compatible |
-| Code coverage | Tracked in CI |
-
----
-
-## Regulatory Intelligence
-
-Beyond drug-level approvals, this project provides **multi-jurisdiction regulatory framework intelligence** for pipeline analysis. See [`docs/local-regulation-2026.md`](docs/local-regulation-2026.md) for a comprehensive reference covering 7 jurisdictions:
-
-- 🇺🇸 **US IRA** — Medicare Part D price negotiation (Sep 2026), Small Molecule Penalty (7 yr vs 13 yr)
-- 🇩🇪 **Germany AMNOG** — Benefit assessment, 2026 reform with fixed effect-size thresholds
-- 🇫🇷 **France HAS/CEPS** — SMR/ASMR ratings, 400–600 day access timelines
-- 🇮🇹 **Italy AIFA** — 21 regional formularies, payback mechanisms
-- 🇬🇧 **UK MHRA/NICE** — Post-Brexit ILAP pathway, £/QALY thresholds
-- 🇯🇵 **Japan PMDA/NHI** — Sakigake designation, biennial price revision
-- 🇨🇳 **China NMPA/NRDL** — Annual –61% price negotiation
-
----
-
-## Example Agent Queries
-
-> *"What's in the pipeline for GLP-1 agonists?"*
-→ `drug_pipeline(drug_name="semaglutide")` → ATC class, FDA status, clinical trials, publications
-
-> *"Which companies have Phase 3 trials for non-small cell lung cancer?"*
-→ `search_trials(condition="non-small cell lung cancer", phase="PHASE3", status="RECRUITING")`
-
-> *"Is pembrolizumab approved in the EU vs US?"*
-→ `get_approvals(drug_name="Keytruda")` + `get_eu_approvals(drug_name="Keytruda")`
-
-> *"What are the safety signals for semaglutide?"*
-→ `get_safety_data(drug_name="semaglutide")` + `detect_safety_signals(drug_name="semaglutide")`
-
-> *"What does the label say for Keytruda?"*
-→ `get_drug_label(drug_name="Keytruda")` → indications, boxed warnings, contraindications, dosing
-
-> *"When does the patent for Keytruda expire?"*
-→ `get_patent_expiry(drug_name="Keytruda")` → exclusivity information
-
-> *"What drugs are approved for non-small cell lung cancer in the EU?"*
-→ `approved_for_condition(condition="non-small cell lung cancer")`
-
 ---
 
 ## Client Integration
@@ -191,6 +175,19 @@ Beyond drug-level approvals, this project provides **multi-jurisdiction regulato
   "mcpServers": {
     "drug-pipeline": {
       "command": "python3",
+      "args": ["-m", "drug_pipeline.server"]
+    }
+  }
+}
+```
+
+On Windows, use `python` instead of `python3`:
+
+```json
+{
+  "mcpServers": {
+    "drug-pipeline": {
+      "command": "python",
       "args": ["-m", "drug_pipeline.server"]
     }
   }
@@ -210,6 +207,36 @@ Beyond drug-level approvals, this project provides **multi-jurisdiction regulato
 }
 ```
 
+### ChatWise / Other Clients
+
+```json
+{
+  "mcpServers": {
+    "drug-pipeline": {
+      "command": "python",
+      "args": ["-m", "drug_pipeline.server"]
+    }
+  }
+}
+```
+
+If your client supports environment variables, these settings help avoid long hangs on slower Windows networks by returning a timeout error or partial result sooner:
+
+```json
+{
+  "mcpServers": {
+    "drug-pipeline": {
+      "command": "python",
+      "args": ["-m", "drug_pipeline.server"],
+      "env": {
+        "DRUG_PIPELINE_TOOL_TIMEOUT": "20",
+        "DRUG_PIPELINE_REQUEST_TIMEOUT": "8"
+      }
+    }
+  }
+}
+```
+
 ### HTTP / SSE (Remote)
 
 ```bash
@@ -219,9 +246,37 @@ drug-pipeline --http --port 8081
 
 Connect at `http://your-server:8081/sse`.
 
-### Smithery
+---
 
-[One-click deploy](https://smithery.ai/servers/crop-mcp/drug-pipeline). No config needed.
+## Example Agent Queries
+
+> *"What's in the pipeline for GLP-1 agonists?"*
+→ `drug_pipeline(drug_name="semaglutide")` → ATC class, FDA status, clinical trials, publications
+
+> *"Which companies have Phase 3 trials for non-small cell lung cancer?"*
+→ `search_trials(condition="non-small cell lung cancer", phase="PHASE3", status="RECRUITING")`
+
+> *"Is pembrolizumab approved in the EU vs US?"*
+→ `get_approvals(drug_name="Keytruda")` + `get_eu_approvals(drug_name="Keytruda")`
+
+> *"What are the safety signals for semaglutide?"*
+→ `get_safety_data(drug_name="semaglutide")` + `detect_safety_signals(drug_name="semaglutide")`
+
+---
+
+## 🍴 Syncing with Upstream
+
+This fork tracks [DasClown/drug-pipeline-mcp](https://github.com/DasClown/drug-pipeline-mcp) as upstream.
+
+```bash
+# One-time setup
+git remote add upstream https://github.com/DasClown/drug-pipeline-mcp.git
+
+# Sync latest changes
+git fetch upstream
+git merge upstream/main
+git push origin main
+```
 
 ---
 
@@ -229,14 +284,12 @@ Connect at `http://your-server:8081/sse`.
 
 | Channel | Purpose |
 |---------|---------|
-| **[💬 GitHub Discussions](https://github.com/DasClown/drug-pipeline-mcp/discussions)** | Questions before coding, feature ideas, community chat |
-| **[🐛 GitHub Issues](https://github.com/DasClown/drug-pipeline-mcp/issues)** | Bug reports, confirmed feature requests |
+| **[🐛 GitHub Issues](https://github.com/beckyeeky/drug-pipeline-mcp/issues)** | Bug reports, feature requests |
 | **[📖 CONTRIBUTING.md](CONTRIBUTING.md)** | Development setup, code style, testing |
-
-New contributors welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions.
+| **[⬆️ Original Upstream](https://github.com/DasClown/drug-pipeline-mcp)** | Original project by @DasClown |
 
 ---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE). Original work by [@DasClown](https://github.com/DasClown).

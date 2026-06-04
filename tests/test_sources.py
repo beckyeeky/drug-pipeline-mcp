@@ -2,6 +2,8 @@
 
 import time
 
+import pytest
+
 import drug_pipeline.sources as sources
 from drug_pipeline.sources import (
     PHASE_MAP,
@@ -63,6 +65,41 @@ class TestCache:
         # but at least it doesn't return stale cached data
         result = _cached_fetch("http://nonexistent.example/test")
         assert result is not None
+
+
+class TestTimeoutBudget:
+    """Per-tool time budget helpers."""
+
+    def test_resolve_timeout_without_deadline(self):
+        resolved = sources._resolve_timeout(3)
+        assert resolved == 3
+
+    def test_resolve_timeout_caps_to_remaining_budget(self):
+        token = sources.set_request_deadline(2.0)
+        try:
+            resolved = sources._resolve_timeout(10)
+            assert 1.0 <= resolved <= 1.95
+        finally:
+            sources.reset_request_deadline(token)
+
+    def test_resolve_timeout_raises_when_budget_exhausted(self):
+        token = sources.set_request_deadline(0.05)
+        try:
+            with pytest.raises(TimeoutError):
+                sources._resolve_timeout(5)
+        finally:
+            sources.reset_request_deadline(token)
+
+    def test_non_fda_requests_skip_rate_limit_sleep(self):
+        original_last_call = sources._last_call
+        sources._last_call = time.time()
+        try:
+            started = time.perf_counter()
+            sources._rate_limited("https://clinicaltrials.gov/api/v2/studies")
+            elapsed = time.perf_counter() - started
+            assert elapsed < 0.1
+        finally:
+            sources._last_call = original_last_call
 
 
 class TestDrugInteractions:

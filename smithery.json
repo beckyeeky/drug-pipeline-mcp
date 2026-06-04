@@ -4,10 +4,10 @@
   "description": "Pharmaceutical R&D Pipeline Intelligence — clinical trials, FDA/EMA approvals, safety data, drug labels, patents & publications",
   "version": "0.5.3",
   "author": "DasClown",
-  "homepage": "https://github.com/DasClown/drug-pipeline-mcp",
+  "homepage": "https://github.com/beckyeeky/drug-pipeline-mcp",
   "type": "docker",
   "docker": {
-    "image": "ghcr.io/dasclown/drug-pipeline-mcp:latest",
+    "image": "ghcr.io/beckyeeky/drug-pipeline-mcp:latest",
     "ports": [8081],
     "healthcheck": {
       "path": "/",
