@@ -553,3 +553,42 @@ class TestDrugPipelineSummary:
         assert app["total_submissions"] == 12
         assert len(app["recent_submissions"]) == 5
         assert "submissions" not in app
+
+
+class TestSplitModuleRegressions:
+    """Guard against missing imports introduced by the module split."""
+
+    def test_approved_for_condition_keeps_regex_helper_available(self):
+        from drug_pipeline.sources import approved_for_condition
+
+        result = approved_for_condition("diabetes", limit=5)
+        assert result.get("error_code") != "TOOL_ERROR"
+
+    def test_company_pipeline_keeps_phase_map_available(self, monkeypatch):
+        import drug_pipeline._sources_composite as composite
+        from drug_pipeline.sources import company_pipeline
+
+        monkeypatch.setattr(
+            composite,
+            "search_trials",
+            lambda **kwargs: {
+                "status": "ok",
+                "results": [
+                    {
+                        "nct_id": "NCT00000001",
+                        "title": "Test Phase 3 Study",
+                        "phase_code": ["PHASE3"],
+                        "overall_status": "RECRUITING",
+                        "conditions": ["Test Condition"],
+                        "interventions": ["Test Drug"],
+                        "source_url": "https://clinicaltrials.gov/study/NCT00000001",
+                    }
+                ],
+            },
+        )
+        monkeypatch.setattr(composite, "get_eu_approvals", lambda drug: {"results": []})
+
+        result = company_pipeline("Pfizer", include_eu=False, limit=5)
+
+        assert result["status"] == "ok"
+        assert "Phase 3" in result["phase_summary"]

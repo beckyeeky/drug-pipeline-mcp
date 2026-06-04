@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .sources import _is_error, datetime
+from .sources import PHASE_MAP, _is_error, datetime
 from ._sources_ctgov import get_trial_detail, search_trials
 from ._sources_ema import approved_for_condition, get_eu_approvals
 from ._sources_fda import (

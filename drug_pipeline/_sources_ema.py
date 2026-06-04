@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re as _re
+
 from .sources import _load_ema_data, datetime
 
 # ═════════════════════════════════════════════════════════════
