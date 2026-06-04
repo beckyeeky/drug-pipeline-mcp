@@ -448,3 +448,108 @@ class TestFindInvestigators:
         if result.get("status") == "ok":
             # May be found or not — schema should be valid either way
             assert "total_investigators" in result
+
+
+class TestDrugPipelineSummary:
+    """Regression coverage for the composite drug pipeline response."""
+
+    def test_keytruda_summary_trims_fda_payload_and_surfaces_partial_errors(self, monkeypatch):
+        import drug_pipeline._sources_composite as composite
+        from drug_pipeline.sources import drug_pipeline_summary
+
+        def ok_search_drug(name):
+            return {"status": "ok", "drug_name": name, "data_sources": ["openFDA"]}
+
+        def ok_trials(**kwargs):
+            return {"status": "ok", "total_count": 1, "results": [{"nct_id": "NCT00000001"}]}
+
+        def timeout_publications(query, max_results=5):
+            return {"status": "error", "error_code": "TIMEOUT", "message": "PubMed timed out"}
+
+        def many_approvals(name):
+            submissions = [
+                {
+                    "type": "SUPPL",
+                    "number": str(i),
+                    "status": "AP",
+                    "status_date": f"2024{(i % 12) + 1:02d}{(i % 27) + 1:02d}",
+                    "review_priority": "STANDARD",
+                    "class_code": "Labeling",
+                }
+                for i in range(12)
+            ]
+            return {
+                "status": "ok",
+                "drug_name": name,
+                "total": 1,
+                "data_source": "openFDA",
+                "applications": [
+                    {
+                        "application_number": "BLA125514",
+                        "sponsor": "MERCK SHARP DOHME",
+                        "brand_names": ["KEYTRUDA"],
+                        "generic_names": ["pembrolizumab"],
+                        "submissions": submissions,
+                        "source_url": "https://example.test/fda/keytruda",
+                    }
+                ],
+            }
+
+        def not_found(*args, **kwargs):
+            return {"status": "ok", "found": False}
+
+        def no_results(*args, **kwargs):
+            return {"status": "ok", "results": []}
+
+        def no_reports(*args, **kwargs):
+            return {"status": "ok", "total_reports": 0, "top_reactions": []}
+
+        def no_recalls(*args, **kwargs):
+            return {"status": "ok", "recalls": [], "total_recalls": 0}
+
+        def no_signals(*args, **kwargs):
+            return {"status": "ok", "signals": [], "total_signals": 0}
+
+        def patent_stub(*args, **kwargs):
+            return {"status": "error", "error_code": "TIMEOUT", "message": "Patent lookup timed out"}
+
+        def interactions_stub(*args, **kwargs):
+            return {
+                "status": "ok",
+                "label_interactions": {
+                    "drug_interactions_text": None,
+                    "contraindications_text": None,
+                },
+                "co_reported_in_faers": [],
+                "total_co_reported": 0,
+                "data_sources": ["openFDA FAERS"],
+            }
+
+        monkeypatch.setattr(composite, "search_drug", ok_search_drug)
+        monkeypatch.setattr(composite, "get_fda_approvals", many_approvals)
+        monkeypatch.setattr(composite, "search_trials", ok_trials)
+        monkeypatch.setattr(composite, "search_publications", timeout_publications)
+        monkeypatch.setattr(composite, "get_eu_approvals", no_results)
+        monkeypatch.setattr(composite, "get_safety_data", no_reports)
+        monkeypatch.setattr(composite, "approved_for_condition", no_results)
+        monkeypatch.setattr(composite, "get_drug_label", not_found)
+        monkeypatch.setattr(composite, "get_recalls", no_recalls)
+        monkeypatch.setattr(composite, "detect_safety_signals", no_signals)
+        monkeypatch.setattr(composite, "get_patent_expiry", patent_stub)
+        monkeypatch.setattr(composite, "get_drug_interactions", interactions_stub)
+
+        result = drug_pipeline_summary(drug_name="Keytruda")
+
+        assert result["status"] == "ok"
+        assert "partial_errors" in result
+        assert any(error["source"] == "publications" for error in result["partial_errors"])
+        assert any(error["source"] == "patent_info" for error in result["partial_errors"])
+
+        approvals = result["fda_approvals"]
+        assert approvals["total"] == 1
+        assert len(approvals["applications"]) == 1
+
+        app = approvals["applications"][0]
+        assert app["total_submissions"] == 12
+        assert len(app["recent_submissions"]) == 5
+        assert "submissions" not in app
