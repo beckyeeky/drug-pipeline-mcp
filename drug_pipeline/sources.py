@@ -42,6 +42,7 @@ _EMA_XLSX_PATH = os.path.join(os.path.dirname(__file__), "ema_medicines.xlsx")
 _EMA_DOWNLOAD_URL = (
     "https://www.ema.europa.eu/en/documents/report/medicines-output-medicines-report_en.xlsx"
 )
+_EMA_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) Gecko/20100101 Firefox/128.0"
 _ema_cache: list[dict] | None = None
 _ema_cache_time: float = 0.0  # timestamp of last successful load
 _EMA_CACHE_TTL: float = 86400  # 24h in seconds
@@ -86,7 +87,7 @@ def _download_ema_xlsx() -> bool:
     try:
         timeout = _resolve_timeout(_DEFAULT_EMA_DOWNLOAD_TIMEOUT)
         req = urllib.request.Request(
-            _EMA_DOWNLOAD_URL, headers={"User-Agent": "drug-pipeline-mcp/0.1"}
+            _EMA_DOWNLOAD_URL, headers={"User-Agent": _EMA_USER_AGENT}
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             data = resp.read()
